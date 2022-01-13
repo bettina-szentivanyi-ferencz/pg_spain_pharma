@@ -1,3 +1,5 @@
+-- final compliance column of Visibility Score is calculated in this view from storechecks_kpi_fact table
+
 SELECT 
 a.visit_id, 
 b.visit_date_key, 
