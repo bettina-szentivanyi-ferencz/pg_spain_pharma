@@ -1,3 +1,4 @@
+--rename kbd_calculation
 WITH RECURSIVE
 -- filtering visit data from storechecks_visit_fact_view and product data from product_master
 cte_visit_product_dim -- old z
@@ -14,9 +15,7 @@ product_master.brand
           WHERE storechecks_visit_fact_view.categ_name::text = product_master.base::text 
           AND product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text 
           AND product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text 
-          AND product_master.desc_j::text <> 'EXCLUDE'::character varying::text
-          and visit_id='612f44d21ba9990006fb9bad'
-          and storechecks_visit_fact_view.categ_name='Respiratorio - Cough & Cold' and product_master.brand='Vicks'),
+          AND product_master.desc_j::text <> 'EXCLUDE'::character varying::text),
 -- calculating sum of own and total facing on brand level per primary (Lineal) and secondary shelf (Segunda ubicación) from storechecks_planogram_fact
 cte_product_facing_fact -- old a
 as
