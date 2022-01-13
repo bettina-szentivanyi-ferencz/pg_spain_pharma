@@ -1,162 +1,253 @@
---rename kbd_calculation
-WITH RECURSIVE
+with recursive
 -- filtering visit data from storechecks_visit_fact_view and product data from product_master
-cte_visit_product_dim -- old z
+cte_visit_product_dim
+-- old z
 as
-(SELECT DISTINCT 
-storechecks_visit_fact_view.visit_id, 
-storechecks_visit_fact_view.visit_date_key, 
-storechecks_visit_fact_view.store_id, 
-storechecks_visit_fact_view.owner_id, 
-storechecks_visit_fact_view.categ_name, 
-product_master.seg1, 
-product_master.brand
-           FROM procter_and_gamble_es_pharma.storechecks_visit_fact_view storechecks_visit_fact_view, procter_and_gamble_es_pharma.product_master product_master
-          WHERE storechecks_visit_fact_view.categ_name::text = product_master.base::text 
-          AND product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text 
-          AND product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text 
-          AND product_master.desc_j::text <> 'EXCLUDE'::character varying::text),
+(
+select
+	distinct 
+storechecks_visit_fact_view.visit_id,
+	storechecks_visit_fact_view.visit_date_key,
+	storechecks_visit_fact_view.store_id,
+	storechecks_visit_fact_view.owner_id,
+	storechecks_visit_fact_view.categ_name,
+	product_master.seg1,
+	product_master.brand
+from
+	procter_and_gamble_es_pharma.storechecks_visit_fact_view storechecks_visit_fact_view,
+	procter_and_gamble_es_pharma.product_master product_master
+where
+	storechecks_visit_fact_view.categ_name::text = product_master.base::text
+	and product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text
+	and product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text
+	and product_master.desc_j::text <> 'EXCLUDE'::character varying::text),
 -- calculating sum of own and total facing on brand level per primary (Lineal) and secondary shelf (Segunda ubicación) from storechecks_planogram_fact
-cte_product_facing_fact -- old a
+cte_product_facing_fact
+-- old a
 as
- (SELECT 
-storechecks_planogram_fact.visit_id, 
-product_master.base, 
-product_master.seg1, 
-product_master.brand, 
-sum(
-                CASE
-                    WHEN storechecks_planogram_fact.photo_group_type::text = 'Lineal'::character varying::text 
-                    AND product_master.desc_j::text = 'INCLUDE'::character varying::text 
-                    AND storechecks_planogram_fact.own = 1 THEN storechecks_planogram_fact.facings::double precision
-                    ELSE NULL::double precision
-                END) AS own_primary_facing, sum(
-                CASE
-                    WHEN storechecks_planogram_fact.photo_group_type::text = 'Lineal'::character varying::text 
-                    AND product_master.desc_j::text = 'INCLUDE'::character varying::text 
-                    THEN storechecks_planogram_fact.facings::double precision
-                    ELSE NULL::double precision
-                END) AS total_primary_facing, sum(
-                CASE
-                    WHEN storechecks_planogram_fact.photo_group_type::text = 'Segunda ubicación'::character varying::text 
-                    AND product_master.desc_j::text = 'INCLUDE'::character varying::text 
-                    AND storechecks_planogram_fact.own = 1 THEN storechecks_planogram_fact.facings::double precision
-                    ELSE NULL::double precision
-                END) AS own_display_facing, sum(
-                CASE
-                    WHEN storechecks_planogram_fact.photo_group_type::text = 'Segunda ubicación'::character varying::text 
-                    AND product_master.desc_j::text = 'INCLUDE'::character varying::text 
-                    THEN storechecks_planogram_fact.facings::double precision
-                    ELSE NULL::double precision
-                END) AS total_display_facing
-           FROM procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact, procter_and_gamble_es_pharma.product_master product_master
-          WHERE storechecks_planogram_fact.product_id = product_master.product_id
-          GROUP BY storechecks_planogram_fact.visit_id, product_master.base, product_master.seg1, product_master.brand),
+ (
+select
+	storechecks_planogram_fact.visit_id,
+	product_master.base,
+	product_master.seg1,
+	product_master.brand,
+	sum(
+                case
+                    when storechecks_planogram_fact.photo_group_type::text = 'Lineal'::character varying::text 
+                    and product_master.desc_j::text = 'INCLUDE'::character varying::text 
+                    and storechecks_planogram_fact.own = 1 then storechecks_planogram_fact.facings::double precision
+                    else null::double precision
+                end) as own_primary_facing,
+	sum(
+                case
+                    when storechecks_planogram_fact.photo_group_type::text = 'Lineal'::character varying::text 
+                    and product_master.desc_j::text = 'INCLUDE'::character varying::text 
+                    then storechecks_planogram_fact.facings::double precision
+                    else null::double precision
+                end) as total_primary_facing,
+	sum(
+                case
+                    when storechecks_planogram_fact.photo_group_type::text = 'Segunda ubicación'::character varying::text 
+                    and product_master.desc_j::text = 'INCLUDE'::character varying::text 
+                    and storechecks_planogram_fact.own = 1 then storechecks_planogram_fact.facings::double precision
+                    else null::double precision
+                end) as own_display_facing,
+	sum(
+                case
+                    when storechecks_planogram_fact.photo_group_type::text = 'Segunda ubicación'::character varying::text 
+                    and product_master.desc_j::text = 'INCLUDE'::character varying::text 
+                    then storechecks_planogram_fact.facings::double precision
+                    else null::double precision
+                end) as total_display_facing
+from
+	procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact,
+	procter_and_gamble_es_pharma.product_master product_master
+where
+	storechecks_planogram_fact.product_id = product_master.product_id
+group by
+	storechecks_planogram_fact.visit_id,
+	product_master.base,
+	product_master.seg1,
+	product_master.brand),
 -- calculating sum of own and total facing on segment level per primary (Lineal) shelf and secondary(Segunda ubicación) from storechecks_planogram_fact
-cte_product_facing_fact_segment -- old d and f
+cte_product_facing_fact_segment
+-- old d and f
 as
- (SELECT storechecks_planogram_fact.visit_id, product_master.seg1, 
-sum(
-        CASE
-            WHEN storechecks_planogram_fact.photo_group_type::text = 'Lineal'::character varying::text 
-            AND product_master.desc_j::text = 'INCLUDE'::character varying::text 
-            THEN storechecks_planogram_fact.facings::double precision
-            ELSE NULL::double precision
-        END) AS primary_facing,
-sum(
-        CASE
-            WHEN storechecks_planogram_fact.photo_group_type::text = 'Segunda ubicación'::character varying::text 
-            AND product_master.desc_j::text = 'INCLUDE'::character varying::text THEN storechecks_planogram_fact.facings::double precision
-            ELSE NULL::double precision
-        END) AS display_facing
-   FROM procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact, procter_and_gamble_es_pharma.product_master product_master
-  WHERE storechecks_planogram_fact.product_id = product_master.product_id
-  GROUP BY storechecks_planogram_fact.visit_id, product_master.seg1),
+ (
+select
+	storechecks_planogram_fact.visit_id,
+	product_master.seg1,
+	sum(
+        case
+            when storechecks_planogram_fact.photo_group_type::text = 'Lineal'::character varying::text 
+            and product_master.desc_j::text = 'INCLUDE'::character varying::text 
+            then storechecks_planogram_fact.facings::double precision
+            else null::double precision
+        end) as primary_facing,
+	sum(
+        case
+            when storechecks_planogram_fact.photo_group_type::text = 'Segunda ubicación'::character varying::text 
+            and product_master.desc_j::text = 'INCLUDE'::character varying::text then storechecks_planogram_fact.facings::double precision
+            else null::double precision
+        end) as display_facing
+from
+	procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact,
+	procter_and_gamble_es_pharma.product_master product_master
+where
+	storechecks_planogram_fact.product_id = product_master.product_id
+group by
+	storechecks_planogram_fact.visit_id,
+	product_master.seg1),
 -- calculating count of present and oos product on brand level based on all_top_sku (legacy kpi setup until '2021-10-01') and product_group (current kpi setup) 
 --from storechecks_product_fact(legacy) and storechecks_kpi_fact(current)
-cte_product_count -- old e
+cte_product_count
+-- old e
 as
- (SELECT 
- storechecks_product_fact.visit_id, 
- product_master.seg1, 
- product_master.brand, 
- count(
-        CASE
-            WHEN storechecks_product_fact.out_of_stock = 0 THEN storechecks_product_fact.product_id
-            ELSE NULL::bpchar
-        END) AS present_count, 
-        count(
-        CASE
-            WHEN storechecks_product_fact.out_of_stock = 1 THEN storechecks_product_fact.product_id
-            ELSE NULL::bpchar
-        END) AS oos_count
-   FROM procter_and_gamble_es_pharma.storechecks_product_fact storechecks_product_fact
-   JOIN procter_and_gamble_es_pharma.product_master product_master  ON storechecks_product_fact.product_id = product_master .product_id
-   JOIN procter_and_gamble_es_pharma.storechecks_visit_fact storechecks_visit_fact ON storechecks_product_fact.visit_id = storechecks_visit_fact.visit_id 
-   AND storechecks_visit_fact.visit_date_key < '2021-10-01'::bpchar
-  WHERE storechecks_product_fact.analysis::text = 'all_top_sku'::character varying::text
-  GROUP BY storechecks_product_fact.visit_id, product_master.seg1, product_master.brand
-UNION 
- SELECT prod_groups.visit_id, product_master.seg1, product_master.brand, 
- count(
-        CASE
-            WHEN prod_groups.compliant = 1 THEN prod_groups.product_id::bpchar
-            ELSE NULL::bpchar
-        END) AS present_count, count(
-        CASE
-            WHEN prod_groups.compliant = 0 THEN prod_groups.product_id::bpchar
-            ELSE NULL::bpchar
-        END) AS oos_count
-   FROM (SELECT 
-   storechecks_kpi_fact.visit_id, 
-   storechecks_kpi_fact.display_group, 
-   storechecks_kpi_fact.product_group_name, 
-   "max"(storechecks_kpi_fact.product_id::text) AS product_id, 
-   "max"(
-                CASE
-                    WHEN storechecks_kpi_fact.compliant = true THEN 1
-                    ELSE 0
-                END) AS compliant
-           FROM procter_and_gamble_es_pharma.storechecks_kpi_fact storechecks_kpi_fact
-      JOIN procter_and_gamble_es_pharma.storechecks_visit_fact storechecks_visit_fact ON storechecks_kpi_fact.visit_id = storechecks_visit_fact.visit_id
-     WHERE storechecks_visit_fact.visit_date_key >= '2021-10-01'::bpchar 
-     AND storechecks_kpi_fact.display_group::text ~~ '%Visible p-sku distribution%'::text 
-     AND storechecks_kpi_fact.product_id::text <> ''::text
-     GROUP BY storechecks_kpi_fact.visit_id, storechecks_kpi_fact.display_group, storechecks_kpi_fact.product_group_name) prod_groups
-   JOIN procter_and_gamble_es_pharma.product_master product_master ON prod_groups.product_id = product_master.product_id::text
-  GROUP BY prod_groups.visit_id, product_master.seg1, product_master.brand)       
+ (
 select
-cte_visit_product_dim.store_id,
-cte_visit_product_dim.visit_id, 
-cte_visit_product_dim.visit_date_key, 
-cte_visit_product_dim.owner_id, 
-cte_visit_product_dim.categ_name, 
-cte_visit_product_dim.seg1, 
-cte_visit_product_dim.brand,
-cte_product_facing_fact.own_primary_facing,
-cte_product_facing_fact.total_primary_facing,
-cte_product_facing_fact.own_display_facing, 
-cte_product_facing_fact.total_display_facing,
-ps_rules_brand_staging.compliance, 
-kbd_staging.psku_target, 
-kbd_staging.psku_weight, 
-kbd_staging.sod_target, 
-kbd_staging.sod_weight, 
-kbd_staging.ps_target, 
-kbd_staging.ps_weight, 
-kbd_staging.sos_target, 
-kbd_staging.sos_weight, 
-cte_product_facing_fact_segment.primary_facing,
-cte_product_count.present_count, 
-cte_product_count.oos_count, 
-cte_product_facing_fact_segment.display_facing,
-kbd_staging.pv_weight, 
-kbd_staging.pv_target
-from cte_visit_product_dim
-LEFT JOIN procter_and_gamble_es_pharma.ps_rules_brand_staging ps_rules_brand_staging ON cte_visit_product_dim.visit_id = ps_rules_brand_staging.visit_id AND cte_visit_product_dim.seg1::text = ps_rules_brand_staging.segment::text AND cte_visit_product_dim.brand::text = ps_rules_brand_staging.brand::text
-LEFT JOIN procter_and_gamble_es_pharma.kbd_staging kbd_staging ON cte_visit_product_dim.categ_name::text = kbd_staging.category::text AND cte_visit_product_dim.seg1::text = kbd_staging.segment::text AND cte_visit_product_dim.brand::text = kbd_staging.brand::text
-left join cte_product_facing_fact ON cte_visit_product_dim.visit_id = cte_product_facing_fact.visit_id AND cte_visit_product_dim.seg1::text = cte_product_facing_fact.seg1::text AND cte_visit_product_dim.brand::text = cte_product_facing_fact.brand::text
-LEFT join cte_product_facing_fact_segment ON cte_visit_product_dim.visit_id = cte_product_facing_fact_segment.visit_id AND cte_visit_product_dim.seg1::text = cte_product_facing_fact_segment.seg1::text
-left join cte_product_count ON cte_visit_product_dim.visit_id = cte_product_count.visit_id AND cte_visit_product_dim.seg1::text = cte_product_count.seg1::text AND cte_visit_product_dim.brand::text = cte_product_count.brand::text
-group by cte_visit_product_dim.store_id, cte_visit_product_dim.visit_id,  cte_visit_product_dim.visit_date_key,  cte_visit_product_dim.owner_id,  cte_visit_product_dim.categ_name,  cte_visit_product_dim.seg1,  cte_visit_product_dim.brand, cte_product_facing_fact.own_primary_facing, cte_product_facing_fact.total_primary_facing, cte_product_facing_fact.own_display_facing,  cte_product_facing_fact.total_display_facing, ps_rules_brand_staging.compliance,  kbd_staging.psku_target,  kbd_staging.psku_weight,  kbd_staging.sod_target,  kbd_staging.sod_weight,  kbd_staging.ps_target,  kbd_staging.ps_weight,  kbd_staging.sos_target,  kbd_staging.sos_weight,  cte_product_facing_fact_segment.primary_facing, cte_product_count.present_count,  cte_product_count.oos_count,  cte_product_facing_fact_segment.display_facing, kbd_staging.pv_weight,  kbd_staging.pv_target;
-
+	storechecks_product_fact.visit_id,
+	product_master.seg1,
+	product_master.brand,
+	count(
+        case
+            when storechecks_product_fact.out_of_stock = 0 then storechecks_product_fact.product_id
+            else null::bpchar
+        end) as present_count,
+	count(
+        case
+            when storechecks_product_fact.out_of_stock = 1 then storechecks_product_fact.product_id
+            else null::bpchar
+        end) as oos_count
+from
+	procter_and_gamble_es_pharma.storechecks_product_fact storechecks_product_fact
+join procter_and_gamble_es_pharma.product_master product_master on
+	storechecks_product_fact.product_id = product_master .product_id
+join procter_and_gamble_es_pharma.storechecks_visit_fact storechecks_visit_fact on
+	storechecks_product_fact.visit_id = storechecks_visit_fact.visit_id
+	and storechecks_visit_fact.visit_date_key < '2021-10-01'::bpchar
+where
+	storechecks_product_fact.analysis::text = 'all_top_sku'::character varying::text
+group by
+	storechecks_product_fact.visit_id,
+	product_master.seg1,
+	product_master.brand
+union
+select
+	prod_groups.visit_id,
+	product_master.seg1,
+	product_master.brand,
+	count(
+        case
+            when prod_groups.compliant = 1 then prod_groups.product_id::bpchar
+            else null::bpchar
+        end) as present_count,
+	count(
+        case
+            when prod_groups.compliant = 0 then prod_groups.product_id::bpchar
+            else null::bpchar
+        end) as oos_count
+from
+	(
+	select
+		storechecks_kpi_fact.visit_id,
+		storechecks_kpi_fact.display_group,
+		storechecks_kpi_fact.product_group_name,
+		"max"(storechecks_kpi_fact.product_id::text) as product_id,
+		"max"(
+		case
+			when storechecks_kpi_fact.compliant = true then 1
+			else 0
+		end) as compliant
+	from
+		procter_and_gamble_es_pharma.storechecks_kpi_fact storechecks_kpi_fact
+	join procter_and_gamble_es_pharma.storechecks_visit_fact storechecks_visit_fact on
+		storechecks_kpi_fact.visit_id = storechecks_visit_fact.visit_id
+	where
+		storechecks_visit_fact.visit_date_key >= '2021-10-01'::bpchar
+		and storechecks_kpi_fact.display_group::text ~~ '%Visible p-sku distribution%'::text
+		and storechecks_kpi_fact.product_id::text <> ''::text
+	group by
+		storechecks_kpi_fact.visit_id,
+		storechecks_kpi_fact.display_group,
+		storechecks_kpi_fact.product_group_name) prod_groups
+join procter_and_gamble_es_pharma.product_master product_master on
+	prod_groups.product_id = product_master.product_id::text
+group by
+	prod_groups.visit_id,
+	product_master.seg1,
+	product_master.brand)       
+select
+	cte_visit_product_dim.store_id,
+	cte_visit_product_dim.visit_id,
+	cte_visit_product_dim.visit_date_key,
+	cte_visit_product_dim.owner_id,
+	cte_visit_product_dim.categ_name,
+	cte_visit_product_dim.seg1,
+	cte_visit_product_dim.brand,
+	cte_product_facing_fact.own_primary_facing,
+	cte_product_facing_fact.total_primary_facing,
+	cte_product_facing_fact.own_display_facing,
+	cte_product_facing_fact.total_display_facing,
+	ps_rules_brand_staging.compliance,
+	kbd_staging.psku_target,
+	kbd_staging.psku_weight,
+	kbd_staging.sod_target,
+	kbd_staging.sod_weight,
+	kbd_staging.ps_target,
+	kbd_staging.ps_weight,
+	kbd_staging.sos_target,
+	kbd_staging.sos_weight,
+	cte_product_facing_fact_segment.primary_facing,
+	cte_product_count.present_count,
+	cte_product_count.oos_count,
+	cte_product_facing_fact_segment.display_facing,
+	kbd_staging.pv_weight,
+	kbd_staging.pv_target
+from
+	cte_visit_product_dim
+left join procter_and_gamble_es_pharma.ps_rules_brand_staging ps_rules_brand_staging on
+	cte_visit_product_dim.visit_id = ps_rules_brand_staging.visit_id
+	and cte_visit_product_dim.seg1::text = ps_rules_brand_staging.segment::text
+	and cte_visit_product_dim.brand::text = ps_rules_brand_staging.brand::text
+left join procter_and_gamble_es_pharma.kbd_staging kbd_staging on
+	cte_visit_product_dim.categ_name::text = kbd_staging.category::text
+	and cte_visit_product_dim.seg1::text = kbd_staging.segment::text
+	and cte_visit_product_dim.brand::text = kbd_staging.brand::text
+left join cte_product_facing_fact on
+	cte_visit_product_dim.visit_id = cte_product_facing_fact.visit_id
+	and cte_visit_product_dim.seg1::text = cte_product_facing_fact.seg1::text
+	and cte_visit_product_dim.brand::text = cte_product_facing_fact.brand::text
+left join cte_product_facing_fact_segment on
+	cte_visit_product_dim.visit_id = cte_product_facing_fact_segment.visit_id
+	and cte_visit_product_dim.seg1::text = cte_product_facing_fact_segment.seg1::text
+left join cte_product_count on
+	cte_visit_product_dim.visit_id = cte_product_count.visit_id
+	and cte_visit_product_dim.seg1::text = cte_product_count.seg1::text
+	and cte_visit_product_dim.brand::text = cte_product_count.brand::text
+group by
+	cte_visit_product_dim.store_id,
+	cte_visit_product_dim.visit_id,
+	cte_visit_product_dim.visit_date_key,
+	cte_visit_product_dim.owner_id,
+	cte_visit_product_dim.categ_name,
+	cte_visit_product_dim.seg1,
+	cte_visit_product_dim.brand,
+	cte_product_facing_fact.own_primary_facing,
+	cte_product_facing_fact.total_primary_facing,
+	cte_product_facing_fact.own_display_facing,
+	cte_product_facing_fact.total_display_facing,
+	ps_rules_brand_staging.compliance,
+	kbd_staging.psku_target,
+	kbd_staging.psku_weight,
+	kbd_staging.sod_target,
+	kbd_staging.sod_weight,
+	kbd_staging.ps_target,
+	kbd_staging.ps_weight,
+	kbd_staging.sos_target,
+	kbd_staging.sos_weight,
+	cte_product_facing_fact_segment.primary_facing,
+	cte_product_count.present_count,
+	cte_product_count.oos_count,
+	cte_product_facing_fact_segment.display_facing,
+	kbd_staging.pv_weight,
+	kbd_staging.pv_target;
