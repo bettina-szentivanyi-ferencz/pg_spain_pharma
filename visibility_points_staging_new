@@ -1,6 +1,10 @@
-renaming: visibility_point_compliance
-with recursive
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.visibility_points_compliance CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.visibility_points_compliance as
 -- calculating visibility points from storechecks_planogram_fact
+--oc_compliance = Photo_tag: Detrás del mostrador AND Photo_group: Lineal (legacy calculation) OR Photo_group=Expositor en mostrador (current calculation from 2022.01)
+--bc_compliance = Photo_tag: En el mostrador AND Photo_group: Lineal (legacy calculation) OR Photo_group=Lineal detrás del mostrador (current calculation from 2022.01)
+--ptc_compliance = Photo_tag: Zona T AND Photo_group: Expositor camino al mostrador (legacy calculation) OR Photo_group=Expositor camino al mostrador (current calculation from 2022.01)
+with recursive
 cte_visibility_points
 as
 (
@@ -66,15 +70,15 @@ group by
         CASE
             WHEN cte_visibility_points.on_counter_point > 1 THEN 1
             ELSE 0
-        END AS on_counter_compliance, 
+        END AS oc_compliance, 
         CASE
             WHEN cte_visibility_points.behind_counter_point > 1 THEN 1
             ELSE 0
-        END AS behind_counter_compliance, 
+        END AS bc_compliance, 
         CASE
             WHEN cte_visibility_points.path_to_counter_point > 1 THEN 1
             ELSE 0
-        END AS path_to_counter_compliance
+        END AS ptc_compliance
    from cte_visibility_points
    group by
    	cte_visibility_points.visit_id, 
@@ -84,6 +88,13 @@ group by
 	cte_visibility_points.base, 
 	cte_visibility_points.seg1, 
 	cte_visibility_points.brand,
-	on_counter_compliance,
-	behind_counter_compliance,
-	path_to_counter_compliance;
+	oc_compliance,
+	bc_compliance,
+	ptc_compliance;
+	
+GRANT SELECT ON procter_and_gamble_es_pharma.visibility_points_compliance  TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.visibility_points_compliance  TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.visibility_points_compliance  TO pg_es_pharma;
+
+
+COMMIT;
