@@ -1,0 +1,38 @@
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.visibility_points_staging
+AS SELECT derived_table1.visit_id, derived_table1.visit_date_key, derived_table1.owner_id, derived_table1.store_id, derived_table1.base, derived_table1.seg1 AS segment, derived_table1.brand, 
+        CASE
+            WHEN derived_table1.on_counter_point > 1 THEN 1
+            ELSE 0
+        END AS on_counter_point, 
+        CASE
+            WHEN derived_table1.behind_counter_point > 1 THEN 1
+            ELSE 0
+        END AS behind_counter_point, 
+        CASE
+            WHEN derived_table1.tzone_point > 1 THEN 1
+            ELSE 0
+        END AS tzone_point, 
+        CASE
+            WHEN derived_table1.out_of_tzone > 1 THEN 1
+            ELSE 0
+        END AS out_of_tzone
+   FROM ( SELECT a.visit_id, b.visit_date_key, b.owner_id, b.store_id, c.base, c.seg1, c.brand, sum(
+                CASE
+                    WHEN a.own = 1 AND a.photo_tag::text = 'En el mostrador'::character varying::text THEN a.facings
+                    ELSE NULL::smallint
+                END) AS on_counter_point, sum(
+                CASE
+                    WHEN a.own = 1 AND a.photo_tag::text = 'Detrás del mostrador'::character varying::text THEN a.facings
+                    ELSE NULL::smallint
+                END) AS behind_counter_point, sum(
+                CASE
+                    WHEN a.own = 1 AND a.photo_tag::text = 'Zona T'::character varying::text THEN a.facings
+                    ELSE NULL::smallint
+                END) AS tzone_point, sum(
+                CASE
+                    WHEN a.own = 1 AND a.photo_tag::text = 'Fuera Zona T'::character varying::text THEN a.facings
+                    ELSE NULL::smallint
+                END) AS out_of_tzone
+           FROM procter_and_gamble_es_pharma.storechecks_planogram_fact a, procter_and_gamble_es_pharma.storechecks_visit_fact_view b, procter_and_gamble_es_pharma.product_master c
+          WHERE a.visit_id = b.visit_id AND a.product_id = c.product_id AND c.manufacturer::text = 'Procter and Gamble'::character varying::text
+          GROUP BY a.visit_id, b.visit_date_key, b.owner_id, b.store_id, c.base, c.seg1, c.brand) derived_table1;
