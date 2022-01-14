@@ -1,7 +1,36 @@
 
 --Deleted from DWH
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.kbd_calculations CASCADE;
+
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.kbd_calculations
-AS SELECT z.store_id, z.visit_id, z.visit_date_key, z.categ_name, z.owner_id, z.seg1, z.brand, a.own_primary_facing, a.total_primary_facing, a.own_display_facing, a.total_display_facing, b.compliance, c.psku_target, c.psku_weight, c.sod_target, c.sod_weight, c.ps_target, c.ps_weight, c.sos_target, c.sos_weight, d.facing AS primary_facing, e.present_count, e.oos_count, f.facing AS display_facing
+(
+  store_id,
+  visit_id,
+  visit_date_key,
+  categ_name,
+  owner_id,
+  seg1,
+  brand,
+  own_primary_facing,
+  total_primary_facing,
+  own_display_facing,
+  total_display_facing,
+  compliance,
+  psku_target,
+  psku_weight,
+  sod_target,
+  sod_weight,
+  ps_target,
+  ps_weight,
+  sos_target,
+  sos_weight,
+  primary_facing,
+  present_count,
+  oos_count,
+  display_facing
+)
+AS 
+ SELECT z.store_id, z.visit_id, z.visit_date_key, z.categ_name, z.owner_id, z.seg1, z.brand, a.own_primary_facing, a.total_primary_facing, a.own_display_facing, a.total_display_facing, b.compliance, c.psku_target, c.psku_weight, c.sod_target, c.sod_weight, c.ps_target, c.ps_weight, c.sos_target, c.sos_weight, d.facing AS primary_facing, e.present_count, e.oos_count, f.facing AS display_facing
    FROM ( SELECT DISTINCT a.visit_id, a.visit_date_key, a.store_id, a.owner_id, a.categ_name, b.seg1, b.brand
            FROM procter_and_gamble_es_pharma.storechecks_visit_fact_view a, procter_and_gamble_es_pharma.product_master b
           WHERE a.categ_name::text = b.base::text AND b.seg1::text !~~ '%NO SEGMENT%'::character varying::text AND b.seg1::text <> 'DEVALID PRODUCT'::character varying::text AND b.desc_j::text <> 'EXCLUDE'::character varying::text AND a.quarter_rank = 1 AND a.daily_rank = 1) z
@@ -55,3 +84,11 @@ AS SELECT z.store_id, z.visit_id, z.visit_date_key, z.categ_name, z.owner_id, z.
    FROM procter_and_gamble_es_pharma.storechecks_planogram_fact a, procter_and_gamble_es_pharma.product_master b
   WHERE a.product_id = b.product_id
   GROUP BY a.visit_id, b.seg1) f ON z.visit_id = f.visit_id AND z.seg1::text = f.seg1::text;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.kbd_calculations TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.kbd_calculations TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.kbd_calculations TO pg_es_pharma;
+
+
+COMMIT;
