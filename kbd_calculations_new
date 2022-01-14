@@ -180,10 +180,11 @@ group by
 	product_master.brand)
 select
 	cte_visit_product_dim.store_id,
+	store_master.internal_code,
 	cte_visit_product_dim.visit_id,
 	cte_visit_product_dim.visit_date_key,
-	cte_visit_product_dim.owner_id,
 	cte_visit_product_dim.categ_name,
+	cte_visit_product_dim.owner_id,
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
 	cte_product_facing_fact.own_primary_facing,
@@ -212,8 +213,8 @@ select
 	visibility_points_compliance.bc_compliance,
 	visibility_points_compliance.oc_compliance,
 	visibility_points_compliance.tzone_compliance,
-	kbd_staging.pv_weight,
-	kbd_staging.pv_target	
+	kbd_staging.pv_target,	
+	kbd_staging.pv_weight
 from
 	cte_visit_product_dim
 left join procter_and_gamble_es_pharma.ps_rules_brand_staging ps_rules_brand_staging on
@@ -241,10 +242,11 @@ left join procter_and_gamble_es_pharma.visibility_points_compliance visibility_p
 	and cte_visit_product_dim.brand::text = visibility_points_compliance.brand::text
 group by
 	cte_visit_product_dim.store_id,
+	store_master.internal_code,
 	cte_visit_product_dim.visit_id,
 	cte_visit_product_dim.visit_date_key,
-	cte_visit_product_dim.owner_id,
 	cte_visit_product_dim.categ_name,
+	cte_visit_product_dim.owner_id,
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
 	cte_product_facing_fact.own_primary_facing,
@@ -273,8 +275,8 @@ group by
 	visibility_points_compliance.bc_compliance,
 	visibility_points_compliance.oc_compliance,
 	visibility_points_compliance.tzone_compliance,
-	kbd_staging.pv_weight,
-	kbd_staging.pv_target;
+	kbd_staging.pv_target,	
+	kbd_staging.pv_weight;
 
 GRANT SELECT ON procter_and_gamble_es_pharma.kbd_calculations TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.kbd_calculations TO plano_auto_export;
