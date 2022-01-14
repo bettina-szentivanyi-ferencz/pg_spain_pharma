@@ -85,7 +85,7 @@ group by
         case
         	when cte_visibility_points.on_counter_point > 1
         		or cte_visibility_points.behind_counter_point > 1 
-        		or cte_visibility_points.tzone_poin > 1 then 1
+        		or cte_visibility_points.tzone_point > 1 then 1
         	else 0
         end as sp_compliance	
    from cte_visibility_points
