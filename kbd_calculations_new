@@ -213,6 +213,7 @@ select
 	visibility_points_compliance.bc_compliance,
 	visibility_points_compliance.oc_compliance,
 	visibility_points_compliance.tzone_compliance,
+	visibility_points_compliance.sp_compliance,
 	kbd_staging.pv_target,	
 	kbd_staging.pv_weight
 from
@@ -275,6 +276,7 @@ group by
 	visibility_points_compliance.bc_compliance,
 	visibility_points_compliance.oc_compliance,
 	visibility_points_compliance.tzone_compliance,
+	visibility_points_compliance.sp_compliance,
 	kbd_staging.pv_target,	
 	kbd_staging.pv_weight;
 
