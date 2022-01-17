@@ -8,7 +8,7 @@ as
 (
 select
 	distinct 
-    storechecks_visit_fact_view.visit_id,
+    	storechecks_visit_fact_view.visit_id,
 	storechecks_visit_fact_view.visit_date_key,
 	storechecks_visit_fact_view.store_id,
 	storechecks_visit_fact_view.owner_id,
@@ -256,7 +256,7 @@ select
 	cte_product_facing_fact.total_primary_facing,
 	cte_product_facing_fact.own_display_facing,
 	cte_product_facing_fact.total_display_facing,
-	ps_rules_brand_staging.compliance,
+	perfect_shelf_rules_weighted_compliance.compliance,
 	kbd_staging.psku_target,
 	kbd_staging.psku_weight,
 	kbd_staging.sod_target,
@@ -284,10 +284,10 @@ select
 	kbd_staging.pv_weight
 from
 	cte_visit_product_dim
-left join procter_and_gamble_es_pharma.ps_rules_brand_staging ps_rules_brand_staging on
-	cte_visit_product_dim.visit_id = ps_rules_brand_staging.visit_id
-	and cte_visit_product_dim.seg1::text = ps_rules_brand_staging.segment::text
-	and cte_visit_product_dim.brand::text = ps_rules_brand_staging.brand::text
+left join procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance perfect_shelf_rules_weighted_compliance on
+	cte_visit_product_dim.visit_id = perfect_shelf_rules_weighted_compliance.visit_id
+	and cte_visit_product_dim.seg1::text = perfect_shelf_rules_weighted_compliance.segment::text
+	and cte_visit_product_dim.brand::text = perfect_shelf_rules_weighted_compliance.brand::text
 left join procter_and_gamble_es_pharma.kbd_staging kbd_staging on
 	cte_visit_product_dim.categ_name::text = kbd_staging.category::text
 	and cte_visit_product_dim.seg1::text = kbd_staging.segment::text
@@ -323,7 +323,7 @@ group by
 	cte_product_facing_fact.total_primary_facing,
 	cte_product_facing_fact.own_display_facing,
 	cte_product_facing_fact.total_display_facing,
-	ps_rules_brand_staging.compliance,
+	perfect_shelf_rules_weighted_compliance.compliance,
 	kbd_staging.psku_target,
 	kbd_staging.psku_weight,
 	kbd_staging.sod_target,
