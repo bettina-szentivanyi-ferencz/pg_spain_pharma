@@ -178,7 +178,7 @@ group by
 	prod_groups.visit_id,
 	product_master.seg1,
 	product_master.brand),
--- sum touch_and_feel technical generics on visit, seg, brand level	
+-- sum touch_and_feel technical generics on visit, seg, brand level, segment is renaming otherwise left join will generate duplication	
 cte_t_and_f_presence
 as
 (
@@ -310,8 +310,6 @@ left join procter_and_gamble_es_pharma.visibility_points_compliance visibility_p
 left join cte_t_and_f_compliance on cte_visit_product_dim.visit_id = cte_t_and_f_compliance.visit_id
 and cte_visit_product_dim.brand::text = cte_t_and_f_compliance.brand::text  
 and cte_visit_product_dim.seg1::text = cte_t_and_f_compliance.segment::text 
-where cte_visit_product_dim.visit_id='61dd55d795055c000629de09'
-and cte_visit_product_dim.seg1='POC'
 group by
 	cte_visit_product_dim.store_id,
 	store_master.internal_code,
