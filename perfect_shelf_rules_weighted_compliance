@@ -7,6 +7,7 @@ with recursive
 cte_perfect_shelf_compliance
 -- old pg_rules_staging
 as
+(
 select
 	storechecks_kpi_fact.visit_id,
 	storechecks_visit_fact_view.visit_date_key,
@@ -54,8 +55,7 @@ group by
 	storechecks_visit_fact_view.categ_name,
 	storechecks_kpi_fact.display_group,
 	storechecks_kpi_fact.kpi_group1,
-	ps_weight.weight)
-	
+	ps_weight.weight)	
 select
 	cte_perfect_shelf_compliance.visit_id,
 	cte_perfect_shelf_compliance.visit_date_key,
