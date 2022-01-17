@@ -1,3 +1,5 @@
+-- Deleted, replaced with perfect_shelf_rules_weighted_compliance 
+
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.ps_rules_brand_staging
 AS SELECT a.visit_id, a.visit_date_key, a.store_id, a.owner_id, a.categ_name, a.brand, a.segment, sum(a.compliance::double precision * a.weight) * 1.0::double precision AS compliance
    FROM procter_and_gamble_es_pharma.ps_rules_staging a
