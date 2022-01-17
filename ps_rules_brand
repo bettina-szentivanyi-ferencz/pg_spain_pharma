@@ -1,0 +1,6 @@
+-- Deleted, replaced with perfect_shelf_rules_weighted_compliance 
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.ps_rules_brand
+AS SELECT ps_rules.visit_id, ps_rules.visit_date_key, ps_rules.store_id, ps_rules.owner_id, ps_rules.categ_name, ps_rules.brand, ps_rules.segment, sum(ps_rules.compliance::double precision * ps_rules.weight) * 1.0::double precision AS compliance
+   FROM procter_and_gamble_es_pharma.ps_rules
+  GROUP BY ps_rules.visit_id, ps_rules.visit_date_key, ps_rules.store_id, ps_rules.owner_id, ps_rules.categ_name, ps_rules.brand, ps_rules.segment;
