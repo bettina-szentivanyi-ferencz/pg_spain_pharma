@@ -1,0 +1,84 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance AS
+
+with recursive
+-- calculating compliance per perfect shelf rule
+-- why quester and daily rank = 1?
+cte_perfect_shelf_compliance
+-- old pg_rules_staging
+as
+select
+	storechecks_kpi_fact.visit_id,
+	storechecks_visit_fact_view.visit_date_key,
+	storechecks_visit_fact_view.store_id,
+	storechecks_visit_fact_view.owner_id,
+	storechecks_visit_fact_view.categ_name,
+	storechecks_kpi_fact.display_group,
+	split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 1)::character varying as brand,
+	split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 2)::character varying as segment,
+	case
+		when (count(
+            case
+                when storechecks_kpi_fact.compliant = true then 1
+                else null::integer
+            end)::numeric::numeric(18,
+		0) * 1.0 / count(
+            case
+                when storechecks_kpi_fact.compliant = false or storechecks_kpi_fact.compliant = true or storechecks_kpi_fact.compliant is null then 1
+                else null::integer
+            end)::numeric::numeric(18,
+		0) * 1.0) > 0::numeric::numeric(18,
+		0) then 1
+		else 0
+	end as compliance,
+	ps_weight.weight
+from
+	procter_and_gamble_es_pharma.storechecks_kpi_fact storechecks_kpi_fact,
+	procter_and_gamble_es_pharma.storechecks_visit_fact_view storechecks_visit_fact_view,
+	procter_and_gamble_es_pharma.ps_weight ps_weight
+where
+	storechecks_kpi_fact.visit_id = storechecks_visit_fact_view.visit_id
+	and split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 1) = ps_weight.brand::text
+	and storechecks_kpi_fact.display_group::text = ps_weight.ps::text
+	and storechecks_kpi_fact.kpi_group1::text <> ''::character varying::text
+	and storechecks_kpi_fact.display_group::text !~~ '%Share of%'::character varying::text
+	and split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 2) <> ''::character varying::text
+	and storechecks_visit_fact_view.quarter_rank = 1
+	and storechecks_visit_fact_view.daily_rank = 1
+	and (storechecks_kpi_fact.kpi_group1::text || storechecks_kpi_fact.display_group::text) <> 'Oral B - POCOral B - Permanent Display'::character varying::text
+group by
+	storechecks_kpi_fact.visit_id,
+	storechecks_visit_fact_view.visit_date_key,
+	storechecks_visit_fact_view.store_id,
+	storechecks_visit_fact_view.owner_id,
+	storechecks_visit_fact_view.categ_name,
+	storechecks_kpi_fact.display_group,
+	storechecks_kpi_fact.kpi_group1,
+	ps_weight.weight)
+	
+select
+	cte_perfect_shelf_compliance.visit_id,
+	cte_perfect_shelf_compliance.visit_date_key,
+	cte_perfect_shelf_compliance.store_id,
+	cte_perfect_shelf_compliance.owner_id,
+	cte_perfect_shelf_compliance.categ_name,
+	cte_perfect_shelf_compliance.brand,
+	cte_perfect_shelf_compliance.segment,
+	sum(cte_perfect_shelf_compliance.compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as compliance
+from
+	cte_perfect_shelf_compliance
+group by
+	cte_perfect_shelf_compliance.visit_id,
+	cte_perfect_shelf_compliance.visit_date_key,
+	cte_perfect_shelf_compliance.store_id,
+	cte_perfect_shelf_compliance.owner_id,
+	cte_perfect_shelf_compliance.categ_name,
+	cte_perfect_shelf_compliance.brand,
+	cte_perfect_shelf_compliance.segment;
+	
+GRANT SELECT ON procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance TO pg_es_pharma;
+
+
+COMMIT;
