@@ -177,7 +177,72 @@ join procter_and_gamble_es_pharma.product_master product_master on
 group by
 	prod_groups.visit_id,
 	product_master.seg1,
-	product_master.brand)
+	product_master.brand),
+-- sum touch_and_feel technical generics on visit, seg, brand level	
+cte_t_and_f_presence
+as
+(
+select
+	storechecks_visit_fact_view.visit_id,
+	storechecks_visit_fact_view.visit_date_key,
+	storechecks_visit_fact_view.owner_id,
+	storechecks_visit_fact_view.store_id,
+	product_master.base,
+	case
+                    when storechecks_planogram_fact.product_id::text  
+                    in ('5c41b1059a99110001cf4e49'::character varying::text,'5c9a083eaeb4cc0001e03bcf'::character varying::text)
+                    then 'POC'::character varying::text
+                    else product_master.seg1::text
+                end as segment,
+	product_master.brand,
+	sum(
+                case
+                    when storechecks_planogram_fact.product_id::text  
+                    in ('5c41b1059a99110001cf4e49'::character varying::text,'5c9a083eaeb4cc0001e03bcf'::character varying::text)
+                    then storechecks_planogram_fact.facings
+                    else null::smallint
+                end) as touch_and_feel_point
+from
+	procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact,
+	procter_and_gamble_es_pharma.storechecks_visit_fact_view storechecks_visit_fact_view,
+	procter_and_gamble_es_pharma.product_master product_master 
+where
+	storechecks_planogram_fact.visit_id = storechecks_visit_fact_view.visit_id
+	and storechecks_planogram_fact.product_id = product_master.product_id
+	group by
+	storechecks_visit_fact_view.visit_id,
+	storechecks_visit_fact_view.visit_date_key,
+	storechecks_visit_fact_view.owner_id,
+	storechecks_visit_fact_view.store_id,
+	product_master.base,
+	segment,
+	product_master.brand),
+-- calculating compliance of touch and feel score on visit, seg, brand level	
+cte_t_and_f_compliance
+as	
+(
+SELECT 
+	cte_t_and_f_presence.visit_id, 
+	cte_t_and_f_presence.visit_date_key, 
+	cte_t_and_f_presence.owner_id, 
+	cte_t_and_f_presence.store_id, 
+	cte_t_and_f_presence.base, 
+	cte_t_and_f_presence.segment, 
+	cte_t_and_f_presence.brand, 
+        CASE
+            WHEN cte_t_and_f_presence.touch_and_feel_point > 1 THEN 1
+            ELSE 0
+        END AS tf_compliance 
+   from cte_t_and_f_presence
+   group by
+   	cte_t_and_f_presence.visit_id, 
+	cte_t_and_f_presence.visit_date_key, 
+	cte_t_and_f_presence.owner_id, 
+	cte_t_and_f_presence.store_id, 
+	cte_t_and_f_presence.base, 
+	cte_t_and_f_presence.segment, 
+	cte_t_and_f_presence.brand,
+	tf_compliance)
 select
 	cte_visit_product_dim.store_id,
 	store_master.internal_code,
@@ -214,6 +279,7 @@ select
 	visibility_points_compliance.oc_compliance,
 	visibility_points_compliance.tzone_compliance,
 	visibility_points_compliance.sp_compliance,
+	cte_t_and_f_compliance.tf_compliance,
 	kbd_staging.pv_target,	
 	kbd_staging.pv_weight
 from
@@ -241,6 +307,11 @@ join procter_and_gamble_es_pharma.store_master store_master on  cte_visit_produc
 left join procter_and_gamble_es_pharma.visibility_points_compliance visibility_points_compliance on cte_visit_product_dim.visit_id = visibility_points_compliance.visit_id 
 	and cte_visit_product_dim.seg1::text = visibility_points_compliance.segment::text 
 	and cte_visit_product_dim.brand::text = visibility_points_compliance.brand::text
+left join cte_t_and_f_compliance on cte_visit_product_dim.visit_id = cte_t_and_f_compliance.visit_id
+and cte_visit_product_dim.brand::text = cte_t_and_f_compliance.brand::text  
+and cte_visit_product_dim.seg1::text = cte_t_and_f_compliance.segment::text 
+where cte_visit_product_dim.visit_id='61dd55d795055c000629de09'
+and cte_visit_product_dim.seg1='POC'
 group by
 	cte_visit_product_dim.store_id,
 	store_master.internal_code,
@@ -277,6 +348,7 @@ group by
 	visibility_points_compliance.oc_compliance,
 	visibility_points_compliance.tzone_compliance,
 	visibility_points_compliance.sp_compliance,
+	cte_t_and_f_compliance.tf_compliance,
 	kbd_staging.pv_target,	
 	kbd_staging.pv_weight;
 
