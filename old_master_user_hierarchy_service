@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS procter_and_gamble_es_pharma.master_user_hierarchy_service CASCADE;
+
+CREATE TABLE procter_and_gamble_es_pharma.master_user_hierarchy_service
+(
+   owner_name_child   varchar(255),
+   owner_name_parent  varchar(255)
+);
+
+COMMIT;
