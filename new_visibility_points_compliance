@@ -1,3 +1,4 @@
+-- this table replaces visibility_points_all_brands
 DROP VIEW IF EXISTS procter_and_gamble_es_pharma.visibility_points_compliance CASCADE;
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.visibility_points_compliance as
 -- calculating visibility points from storechecks_planogram_fact
