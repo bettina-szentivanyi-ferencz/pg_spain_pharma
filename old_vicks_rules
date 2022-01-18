@@ -1,0 +1,40 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.vicks_rules CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.vicks_rules
+(
+  visit_id,
+  visit_date_key,
+  store_id,
+  owner_id,
+  categ_name,
+  display_group,
+  brand,
+  segment,
+  rule_name,
+  compliance
+)
+AS 
+ SELECT a.visit_id, b.visit_date_key, b.store_id, b.owner_id, b.categ_name, a.display_group, split_part(a.kpi_group1::text, ' - '::character varying::text, 1) AS brand, split_part(a.kpi_group1::text, ' - '::character varying::text, 2) AS segment, split_part(a.display_group::text, ' - '::character varying::text, 2) AS rule_name, 
+        CASE
+            WHEN a.compliant = true AND a.display_group::text ~~ '%Brand Block%'::character varying::text THEN 0.7
+            WHEN a.compliant = true AND a.display_group::text ~~ '%Shelf trays%'::character varying::text THEN 0.3
+            WHEN a.compliant = true AND (a.display_group::text !~~ '%Shelf trays%'::character varying::text OR a.display_group::text !~~ '%Brand Block%'::character varying::text) THEN 1::numeric::numeric(18,0)
+            ELSE 0::numeric::numeric(18,0)
+        END AS compliance
+   FROM procter_and_gamble_es_pharma.storechecks_kpi_fact a, procter_and_gamble_es_pharma.storechecks_visit_fact_view b
+  WHERE a.visit_id = b.visit_id AND a.display_group::text !~~ '%Share of%'::character varying::text AND (a.display_group::text ~~ '%Vicks%'::character varying::text OR a.display_group::text ~~ '%Ilvico%'::character varying::text)
+  GROUP BY a.visit_id, b.visit_date_key, b.store_id, b.owner_id, b.categ_name, a.display_group, a.kpi_group1, 
+        CASE
+            WHEN a.compliant = true AND a.display_group::text ~~ '%Brand Block%'::character varying::text THEN 0.7
+            WHEN a.compliant = true AND a.display_group::text ~~ '%Shelf trays%'::character varying::text THEN 0.3
+            WHEN a.compliant = true AND (a.display_group::text !~~ '%Shelf trays%'::character varying::text OR a.display_group::text !~~ '%Brand Block%'::character varying::text) THEN 1::numeric::numeric(18,0)
+            ELSE 0::numeric::numeric(18,0)
+        END;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.vicks_rules TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.vicks_rules TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.vicks_rules TO pg_es_pharma;
+
+
+COMMIT;
