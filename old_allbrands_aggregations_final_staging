@@ -1,0 +1,52 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.allbrands_aggregations_final_staging CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.allbrands_aggregations_final_staging
+(
+  visit_id,
+  visit_date_key,
+  store_id,
+  owner_id,
+  categ_name,
+  seg1,
+  brand,
+  psku_weight,
+  bc_weight,
+  oc_weight,
+  tzone_weight,
+  psku_target,
+  bc_target,
+  oc_target,
+  tzone_target,
+  avg_oos,
+  bc_compliance,
+  oc_compliance,
+  tzone_compliance
+)
+AS 
+ SELECT a.visit_id, a.visit_date_key, a.store_id, a.owner_id, a.categ_name, a.seg1, a.brand, b.psku_weight, b.bc_weight, b.oc_weight, b.tzone_weight, b.psku_target, b.bc_target, b.oc_target, b.tzone_target, c.present_count::numeric::numeric(18,0) * 1.00 / (c.present_count + c.oos_count)::numeric::numeric(18,0) * 1.00 AS avg_oos, d.bc_compliance, d.oc_compliance, d.tzone_compliance
+   FROM ( SELECT DISTINCT a.visit_id, a.visit_date_key, a.store_id, a.owner_id, a.categ_name, b.seg1, b.brand
+           FROM procter_and_gamble_es_pharma.storechecks_visit_fact_view a, procter_and_gamble_es_pharma.product_master b
+          WHERE a.categ_name::text = b.base::text AND b.desc_j::text = 'INCLUDE'::character varying::text AND b.manufacturer::text = 'Procter and Gamble'::character varying::text AND b.seg1::text <> 'NO SEGMENT TRAY'::character varying::text) a
+   LEFT JOIN procter_and_gamble_es_pharma.kbd_staging b ON a.seg1::text = b.segment::text AND a.brand::text = b.brand::text
+   LEFT JOIN ( SELECT a.visit_id, b.seg1, b.brand, count(
+           CASE
+               WHEN a.out_of_stock = 0 THEN a.product_id
+               ELSE NULL::bpchar
+           END) AS present_count, count(
+           CASE
+               WHEN a.out_of_stock = 1 THEN a.product_id
+               ELSE NULL::bpchar
+           END) AS oos_count
+      FROM procter_and_gamble_es_pharma.storechecks_product_fact a, procter_and_gamble_es_pharma.product_master b
+     WHERE a.product_id = b.product_id AND b.desc_j::text = 'INCLUDE'::character varying::text AND b.manufacturer::text = 'Procter and Gamble'::character varying::text AND b.seg1::text <> 'NO SEGMENT TRAY'::character varying::text
+     GROUP BY a.visit_id, b.seg1, b.brand) c ON a.seg1::text = c.seg1::text AND a.brand::text = c.brand::text AND a.visit_id = c.visit_id
+   LEFT JOIN ( SELECT visibility_points_staging.visit_id, visibility_points_staging.segment, visibility_points_staging.brand, visibility_points_staging.on_counter_point AS oc_compliance, visibility_points_staging.behind_counter_point AS bc_compliance, visibility_points_staging.tzone_point AS tzone_compliance
+   FROM procter_and_gamble_es_pharma.visibility_points_staging) d ON a.visit_id = d.visit_id AND a.seg1::text = d.segment::text AND a.brand::text = d.brand::text;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.allbrands_aggregations_final_staging TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.allbrands_aggregations_final_staging TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.allbrands_aggregations_final_staging TO pg_es_pharma;
+
+
+COMMIT;
