@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS procter_and_gamble_es_pharma.ownership_service CASCADE;
+
+CREATE TABLE procter_and_gamble_es_pharma.ownership_service
+(
+   store_id  varchar(24),
+   owners    varchar(256)
+);
+
+GRANT SELECT, UNKNOWN ON procter_and_gamble_es_pharma.ownership_service TO powerbi_user1;
+GRANT SELECT, UNKNOWN ON procter_and_gamble_es_pharma.ownership_service TO pg_es_pharma;
+
+COMMIT;
