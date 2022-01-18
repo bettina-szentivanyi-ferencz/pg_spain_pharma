@@ -20,7 +20,7 @@ select
                 case
                     when storechecks_planogram_fact.own = 1 
                     	and ((storechecks_planogram_fact.photo_tag::text = 'En el mostrador'::character varying::text 
-                    		and storechecks_planogram_fact.photo_group_type::text = 'Lineal'::character varying::text ) 
+                    		and storechecks_planogram_fact.photo_group_type::text = 'Segunda ubicación'::character varying::text ) 
                     		or storechecks_planogram_fact.photo_group_type::text = 'Expositor en mostrador'::character varying::text) 
                     then storechecks_planogram_fact.facings
                     else null::smallint
@@ -42,7 +42,16 @@ select
                    			or storechecks_planogram_fact.photo_group_type::text = 'Expositor camino al mostrador'::character varying::text) 
                     then storechecks_planogram_fact.facings
                     else null::smallint
-                end) as tzone_point
+                end) as tzone_point,
+   	sum(
+                case
+                    when storechecks_planogram_fact.own = 1 
+                   		and (( storechecks_planogram_fact.photo_tag::text in('Zona T'::character varying::text, 'Fuera Zona T'::character varying::text)
+                   			and storechecks_planogram_fact.photo_group_type::text = 'Lineal'::character varying::text ) 
+                   			or storechecks_planogram_fact.photo_group_type::text = 'Lineal libre acceso'::character varying::text) 
+                    then storechecks_planogram_fact.facings
+                    else null::smallint
+                end) as free_access_point
 from
 	procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact,
 	procter_and_gamble_es_pharma.storechecks_visit_fact_view storechecks_visit_fact_view,
@@ -90,7 +99,11 @@ group by
         		or cte_visibility_points.behind_counter_point > 1 
         		or cte_visibility_points.tzone_point > 1 then 1
         	else 0
-        end as sp_compliance	
+        end as sp_compliance,
+        case
+        	when cte_visibility_points.free_access_point > 1 then 1
+        	else 0
+        end as fa_compliance     
    from cte_visibility_points
    group by
    	cte_visibility_points.visit_id, 
@@ -103,7 +116,8 @@ group by
 	oc_compliance,
 	bc_compliance,
 	tzone_compliance,
-	sp_compliance;
+	sp_compliance,
+ 	fa_compliance;
 	
 GRANT SELECT ON procter_and_gamble_es_pharma.visibility_points_compliance  TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.visibility_points_compliance  TO plano_auto_export;
