@@ -1,0 +1,31 @@
+-- weight/target for visibility scores
+
+DROP TABLE IF EXISTS procter_and_gamble_es_pharma.kbd_staging CASCADE;
+
+CREATE TABLE procter_and_gamble_es_pharma.kbd_staging
+(
+   category      varchar(256),
+   segment       varchar(256),
+   brand         varchar(256),
+   psku_weight   float8,
+   sod_weight    float8,
+   ps_weight     float8,
+   sos_weight    float8,
+   psku_target   float8,
+   sod_target    float8,
+   ps_target     float8,
+   sos_target    float8,
+   bc_weight     float8,
+   oc_weight     float8,
+   tzone_weight  float8,
+   bc_target     float8,
+   oc_target     float8,
+   tzone_target  float8,
+   pv_weight     float8,
+   pv_target     float8
+);
+
+GRANT UPDATE, REFERENCES, TRIGGER, DELETE, RULE, INSERT, SELECT, UNKNOWN ON procter_and_gamble_es_pharma.kbd_staging TO powerbi_user1;
+GRANT UNKNOWN, SELECT ON procter_and_gamble_es_pharma.kbd_staging TO pg_es_pharma;
+
+COMMIT;
