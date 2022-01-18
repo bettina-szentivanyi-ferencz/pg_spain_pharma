@@ -1,0 +1,41 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.vicks_final CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.vicks_final
+(
+  visit_id,
+  visit_date_key,
+  store_id,
+  owner_id,
+  categ_name,
+  display_group,
+  rule_name,
+  brand,
+  segment,
+  compliance
+)
+AS 
+ SELECT a.visit_id, b.visit_date_key, b.store_id, b.owner_id, b.categ_name, a.display_group, 
+        CASE
+            WHEN split_part(a.display_group::text, ' - '::character varying::text, 2) ~~ 'Behind counter%'::character varying::text THEN 'Behind Counter visibility'::character varying::text
+            ELSE split_part(a.display_group::text, ' - '::character varying::text, 2)
+        END AS rule_name, a.brand, a.segment, a.compliance
+   FROM ( SELECT a.visit_id, a.brand::character varying AS brand, b.segment::character varying AS segment, a.display_group, a.compliance
+           FROM ( SELECT DISTINCT vicks_rules.visit_id, vicks_rules.brand, vicks_rules.display_group, vicks_rules.compliance
+                   FROM procter_and_gamble_es_pharma.vicks_rules
+                  WHERE vicks_rules.segment = 'All'::character varying::text) a, ( SELECT DISTINCT vicks_rules.visit_id, vicks_rules.brand, vicks_rules.segment
+                   FROM procter_and_gamble_es_pharma.vicks_rules
+                  WHERE vicks_rules.segment <> 'All'::character varying::text AND vicks_rules.segment <> 'Extra'::character varying::text) b
+          WHERE a.visit_id = b.visit_id AND a.brand = b.brand
+UNION ALL 
+         SELECT vicks_rules.visit_id, vicks_rules.brand::character varying AS brand, vicks_rules.segment::character varying AS segment, vicks_rules.display_group, vicks_rules.compliance
+           FROM procter_and_gamble_es_pharma.vicks_rules
+          WHERE vicks_rules.segment <> 'All'::character varying::text AND vicks_rules.segment <> 'Extra'::character varying::text) a, procter_and_gamble_es_pharma.storechecks_visit_fact b
+  WHERE a.visit_id = b.visit_id;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.vicks_final TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.vicks_final TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.vicks_final TO pg_es_pharma;
+
+
+COMMIT;
