@@ -1,0 +1,32 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.vicks_aggregations CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.vicks_aggregations
+(
+  visit_id,
+  visit_date_key,
+  store_id,
+  owner_id,
+  categ_name,
+  brand,
+  segment,
+  rule_name,
+  crystal_presence,
+  rule_compliance
+)
+AS 
+ SELECT vicks_final.visit_id, vicks_final.visit_date_key, vicks_final.store_id, vicks_final.owner_id, vicks_final.categ_name, vicks_final.brand, vicks_final.segment, vicks_final.rule_name, sum(
+        CASE
+            WHEN vicks_final.display_group::text ~~ '%Crystal%'::character varying::text THEN vicks_final.compliance
+            ELSE NULL::integer::numeric::numeric(18,0)
+        END) AS crystal_presence, sum(
+        CASE
+            WHEN vicks_final.display_group::text !~~ '%Crystal%'::character varying::text THEN vicks_final.compliance
+            ELSE NULL::integer::numeric::numeric(18,0)
+        END) AS rule_compliance
+   FROM procter_and_gamble_es_pharma.vicks_final
+  GROUP BY vicks_final.visit_id, vicks_final.visit_date_key, vicks_final.store_id, vicks_final.owner_id, vicks_final.categ_name, vicks_final.brand, vicks_final.segment, vicks_final.rule_name;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.vicks_aggregations TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.vicks_aggregations TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.vicks_aggregations TO pg_es_pharma;
