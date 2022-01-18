@@ -1,0 +1,24 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.vicks_materials CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.vicks_materials
+(
+  visit_id,
+  store_id,
+  owner_id,
+  visit_date_key,
+  brand,
+  material,
+  compliant
+)
+AS 
+ SELECT a.visit_id, b.store_id, b.owner_id, b.visit_date_key, split_part(a.display_group::text, ' - '::text, 1) AS brand, split_part(a.display_group::text, ' - '::text, 3) AS material, a.compliant
+   FROM procter_and_gamble_es_pharma.storechecks_kpi_fact a, procter_and_gamble_es_pharma.storechecks_visit_fact b
+  WHERE a.visit_id = b.visit_id AND a.display_group::text ~~ '%Materials%'::text;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.vicks_materials TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.vicks_materials TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.vicks_materials TO pg_es_pharma;
+
+
+COMMIT;
