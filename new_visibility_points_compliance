@@ -94,16 +94,28 @@ group by
             WHEN cte_visibility_points.seg1 not in ('POC','Toothpastes','Denture Adhesives','Calm&Sleep') THEN null::smallint
             ELSE 0
         END AS tzone_compliance,
-        case
-        	when cte_visibility_points.on_counter_point > 1
-        		or cte_visibility_points.behind_counter_point > 1 
-        		or cte_visibility_points.tzone_point > 1 then 1
-        	else 0
-        end as sp_compliance,
+                CASE
+            WHEN cte_visibility_points.on_counter_point > 1  THEN 1
+            ELSE 0
+        END AS mv_oc_compliance, 
+        CASE
+            WHEN cte_visibility_points.behind_counter_point > 1 THEN 1
+            ELSE 0
+        END AS mv_bc_compliance, 
+        CASE
+            WHEN cte_visibility_points.tzone_point > 1 THEN 1
+            ELSE 0
+        END AS mv_tzone_compliance,
         case
         	when cte_visibility_points.free_access_point > 1 then 1
         	else 0
-        end as fa_compliance     
+        end as mv_fa_compliance,
+        case
+        	when (oc_compliance = 1 
+        		or bc_compliance = 1 
+        		or tzone_compliance = 1) then 1
+        	else 0
+        end as sp_compliance  
    from cte_visibility_points
    group by
    	cte_visibility_points.visit_id, 
@@ -116,8 +128,11 @@ group by
 	oc_compliance,
 	bc_compliance,
 	tzone_compliance,
-	sp_compliance,
- 	fa_compliance;
+	mv_oc_compliance,
+	mv_bc_compliance,
+	mv_tzone_compliance,
+ 	mv_fa_compliance,
+ 	sp_compliance;
 	
 GRANT SELECT ON procter_and_gamble_es_pharma.visibility_points_compliance  TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.visibility_points_compliance  TO plano_auto_export;
