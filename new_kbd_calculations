@@ -8,7 +8,7 @@ as
 (
 select
 	distinct 
-    	storechecks_visit_fact_view.visit_id,
+    storechecks_visit_fact_view.visit_id,
 	storechecks_visit_fact_view.visit_date_key,
 	storechecks_visit_fact_view.store_id,
 	storechecks_visit_fact_view.owner_id,
@@ -230,7 +230,8 @@ SELECT
 	cte_t_and_f_presence.segment, 
 	cte_t_and_f_presence.brand, 
         CASE
-            WHEN cte_t_and_f_presence.touch_and_feel_point > 1 THEN 1
+            WHEN cte_t_and_f_presence.touch_and_feel_point > 1 and cte_t_and_f_presence.brand='Oral B'::text   THEN 1
+            when cte_t_and_f_presence.brand<>'Oral B'::text  THEN null::smallint
             ELSE 0
         END AS tf_compliance 
    from cte_t_and_f_presence
@@ -278,10 +279,26 @@ select
 	visibility_points_compliance.bc_compliance,
 	visibility_points_compliance.oc_compliance,
 	visibility_points_compliance.tzone_compliance,
-	visibility_points_compliance.sp_compliance,
+	visibility_points_compliance.mv_bc_compliance,
+	visibility_points_compliance.mv_oc_compliance,
+	visibility_points_compliance.mv_tzone_compliance,
+	visibility_points_compliance.mv_fa_compliance,
 	cte_t_and_f_compliance.tf_compliance,
 	kbd_staging.pv_target,	
-	kbd_staging.pv_weight
+	kbd_staging.pv_weight,
+	case
+        	when (visibility_points_compliance.oc_compliance is null 
+        		and visibility_points_compliance.bc_compliance is null
+        		and visibility_points_compliance.tzone_compliance is null) then null::smallint
+        	else visibility_points_compliance.sp_compliance
+        end as sp_compliance, 
+     case
+        	when (visibility_points_compliance.mv_oc_compliance is null 
+        		and visibility_points_compliance.mv_bc_compliance is null
+        		and visibility_points_compliance.mv_tzone_compliance is null
+        		and visibility_points_compliance.mv_fa_compliance is null) then null::smallint
+        	else sum(coalesce(visibility_points_compliance.mv_bc_compliance,0) + coalesce(visibility_points_compliance.mv_oc_compliance,0) + coalesce(visibility_points_compliance.mv_tzone_compliance,0)+ coalesce(visibility_points_compliance.mv_fa_compliance,0))
+        end as mv_points
 from
 	cte_visit_product_dim
 left join procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance perfect_shelf_rules_weighted_compliance on
@@ -345,10 +362,14 @@ group by
 	visibility_points_compliance.bc_compliance,
 	visibility_points_compliance.oc_compliance,
 	visibility_points_compliance.tzone_compliance,
-	visibility_points_compliance.sp_compliance,
+	visibility_points_compliance.mv_bc_compliance,
+	visibility_points_compliance.mv_oc_compliance,
+	visibility_points_compliance.mv_tzone_compliance,
+	visibility_points_compliance.mv_fa_compliance,
 	cte_t_and_f_compliance.tf_compliance,
 	kbd_staging.pv_target,	
-	kbd_staging.pv_weight;
+	kbd_staging.pv_weight,
+	sp_compliance;
 
 GRANT SELECT ON procter_and_gamble_es_pharma.kbd_calculations TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.kbd_calculations TO plano_auto_export;
