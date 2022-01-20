@@ -15,6 +15,13 @@ select
 	storechecks_visit_fact_view.categ_name,
 	product_master.seg1,
 	product_master.brand
+	case
+		when visit_date_key between '2020-07-01' and '2021-06-30' then '20202021'::character varying::integer
+		when visit_date_key between '2021-07-01' and '2022-06-30' then '20212022'::character varying::integer
+		when visit_date_key between '2022-07-01' and '2023-06-30' then '20222023'::character varying::integer
+		when visit_date_key between '2023-07-01' and '2024-06-30' then '20232024'::character varying::integer
+		else '1999-01-01'
+	end as fiscal_year_id
 from
 	procter_and_gamble_es_pharma.storechecks_visit_fact_view storechecks_visit_fact_view,
 	procter_and_gamble_es_pharma.product_master product_master
