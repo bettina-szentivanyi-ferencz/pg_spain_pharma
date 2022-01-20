@@ -1,0 +1,123 @@
+drop view if exists procter_and_gamble_es_pharma.storechecks_visit_fact_view cascade;
+
+create or replace
+view procter_and_gamble_es_pharma.storechecks_visit_fact_view
+(
+  account_id,
+  visit_id,
+  visit_date_key,
+  analysis_date_key,
+  categ_code,
+  categ_name,
+  user_comment,
+  owner_id,
+  store_id,
+  number_of_pictures,
+  number_of_sections,
+  process_type,
+  plan_tag,
+  visit_date_seconds,
+  quarter,
+  quarter_rank,
+  daily_rank
+)
+as 
+ select
+	storechecks_visit_fact.account_id,
+	storechecks_visit_fact.visit_id,
+	storechecks_visit_fact.visit_date_key,
+	storechecks_visit_fact.analysis_date_key,
+	storechecks_visit_fact.categ_code,
+	storechecks_visit_fact.categ_name,
+	storechecks_visit_fact.user_comment,
+	storechecks_visit_fact.owner_id,
+	storechecks_visit_fact.store_id,
+	storechecks_visit_fact.number_of_pictures,
+	storechecks_visit_fact.number_of_sections,
+	storechecks_visit_fact."process_type",
+	storechecks_visit_fact.plan_tag,
+	storechecks_visit_fact.visit_date_seconds,
+	case
+		when pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 1::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 2::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 3::double precision then 'JFM'::character varying
+		when pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 4::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 5::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 6::double precision then 'AMJ'::character varying
+		when pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 7::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 8::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 9::double precision then 'JAS'::character varying
+		else 'OND'::character varying
+	end as quarter,
+	pg_catalog.dense_rank()
+  over( 
+  partition by storechecks_visit_fact.store_id,
+	storechecks_visit_fact.categ_name,
+	case
+		when pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 1::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 2::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 3::double precision then 'JFM'::character varying
+		when pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 4::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 5::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 6::double precision then 'AMJ'::character varying
+		when pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 7::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 8::double precision
+		or pgdate_part('mon'::character varying::text,
+		date(storechecks_visit_fact.visit_date_key)::timestamp without time zone) = 9::double precision then 'JAS'::character varying
+		else 'OND'::character varying
+	end
+order by
+	date(storechecks_visit_fact.visit_date_key) desc) as quarter_rank,
+	pg_catalog.dense_rank()
+  over( 
+  partition by storechecks_visit_fact.store_id,
+	storechecks_visit_fact.categ_name,
+	storechecks_visit_fact.visit_date_key
+order by
+	storechecks_visit_fact.visit_date_seconds desc) as daily_rank
+from
+	procter_and_gamble_es_pharma.storechecks_visit_fact
+WHERE storechecks_visit_fact.visit_date_key::date >= '2020-07-01'::date AND (storechecks_visit_fact.visit_date_key IN ( SELECT DISTINCT calendar.date_key
+           FROM procter_and_gamble_es_pharma.calendar));
+
+grant
+select
+	on
+	procter_and_gamble_es_pharma.storechecks_visit_fact_view to powerbi_user1;
+
+grant trigger,
+select
+	,
+	delete
+	,
+	update
+	,
+	rule,
+	insert
+	,
+	references on
+	procter_and_gamble_es_pharma.storechecks_visit_fact_view to plano_auto_export;
+
+grant
+select
+	on
+	procter_and_gamble_es_pharma.storechecks_visit_fact_view to pg_es_pharma;
+
+commit;
