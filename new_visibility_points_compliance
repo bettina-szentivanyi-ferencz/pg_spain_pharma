@@ -90,26 +90,14 @@ group by
         END AS bc_compliance, 
         CASE
             WHEN cte_visibility_points.tzone_point > 1 
-            and cte_visibility_points.seg1 in ('POC','Toothpastes','Denture Adhesives','Calm&Sleep') THEN 1
-            WHEN cte_visibility_points.seg1 not in ('POC','Toothpastes','Denture Adhesives','Calm&Sleep') THEN null::smallint
+            and cte_visibility_points.seg1 in ('POC','Toothpastes','Denture Adhesives','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN 1
+            WHEN cte_visibility_points.seg1 not in ('POC','Toothpastes','Denture Adhesives','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN null::smallint
             ELSE 0
         END AS tzone_compliance,
-                CASE
-            WHEN cte_visibility_points.on_counter_point > 1  THEN 1
-            ELSE 0
-        END AS mv_oc_compliance, 
-        CASE
-            WHEN cte_visibility_points.behind_counter_point > 1 THEN 1
-            ELSE 0
-        END AS mv_bc_compliance, 
-        CASE
-            WHEN cte_visibility_points.tzone_point > 1 THEN 1
-            ELSE 0
-        END AS mv_tzone_compliance,
         case
         	when cte_visibility_points.free_access_point > 1 then 1
         	else 0
-        end as mv_fa_compliance,
+        end as fa_compliance,
         case
         	when (oc_compliance = 1 
         		or bc_compliance = 1 
@@ -128,10 +116,7 @@ group by
 	oc_compliance,
 	bc_compliance,
 	tzone_compliance,
-	mv_oc_compliance,
-	mv_bc_compliance,
-	mv_tzone_compliance,
- 	mv_fa_compliance,
+ 	fa_compliance,
  	sp_compliance;
 	
 GRANT SELECT ON procter_and_gamble_es_pharma.visibility_points_compliance  TO powerbi_user1;
