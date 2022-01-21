@@ -128,8 +128,16 @@ select
 	cte_perfect_shelf_compliance_weighted.brand,
 	cte_perfect_shelf_compliance_weighted.segment,
 	sum(cte_perfect_shelf_compliance_weighted.compliance::double precision) * 1.0::double precision as compliance,
-	sum(cte_perfect_shelf_compliance_weighted.fa_compliance::double precision) * 1.0::double precision as fa_compliance,
-	sum(cte_perfect_shelf_compliance_weighted.bc_compliance::double precision) * 1.0::double precision as bc_compliance
+	case
+	   WHEN cte_perfect_shelf_compliance_weighted.segment in ('POC','Toothpastes','Denture Adhesives','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics','Diagnostics','Pregnancy') THEN 
+			sum(cte_perfect_shelf_compliance_weighted.fa_compliance::double precision) * 1.0::double precision 
+			else null::smallint
+		end as fa_compliance,
+	case
+	   WHEN cte_perfect_shelf_compliance_weighted.segment in ('MSR','Nasal Deco','Rubs','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN 
+	   sum(cte_perfect_shelf_compliance_weighted.bc_compliance::double precision) * 1.0::double precision 
+	   else null::smallint
+	end as bc_compliance
 from
 	cte_perfect_shelf_compliance_weighted
 group by
