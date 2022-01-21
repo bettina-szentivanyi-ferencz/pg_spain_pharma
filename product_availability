@@ -1,0 +1,17 @@
+ -- procter_and_gamble_es_pharma.product_availability source
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.product_availability
+SELECT a.store_id, a.owner_id, a.visit_date_key, b.visit_id, b.analysis, b.product_id, b.product_ean, b.own, b.currnt_stat, b.value, b.out_of_stock, b.ranking, b.facings_tgt, b.display_group, c.seg1, c.brand, '' as product_group_name
+   FROM procter_and_gamble_es_pharma.storechecks_visit_fact_view a, procter_and_gamble_es_pharma.storechecks_product_fact b, procter_and_gamble_es_pharma.product_master c
+  WHERE a.visit_id = b.visit_id AND b.product_id = c.product_id AND b.analysis::text = 'all_top_sku'::text
+  and a.visit_date_key < '2021-10-01'
+union
+select svf.store_id, svf.owner_id, svf.visit_date_key, svf.visit_id, 'all_top_sku' as analysis, skf.product_id, pm.product_ean, 1 as own,
+	case when compliant = true then 'present' else 'oos' end as currnt_stat, case when compliant = true then 1 else 0 end as value, case when compliant = true then 0 else 1 end as out_of_stock,
+	null as ranking, null as facings_tgt, skf.display_group, pm.seg1, pm.brand, skf.product_group_name
+from procter_and_gamble_es_pharma.storechecks_kpi_fact skf
+	  join procter_and_gamble_es_pharma.storechecks_visit_fact svf on skf.visit_id = svf.visit_id
+	  join procter_and_gamble_es_pharma.product_master pm on skf.product_id = pm.product_id
+where visit_date_key >= '2021-10-01'
+	  and display_group like '%Visible p-sku distribution%'
+	  and skf.product_id != ''
