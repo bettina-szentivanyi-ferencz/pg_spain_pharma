@@ -1,3 +1,5 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance as
 with recursive
 -- calculating compliance per perfect shelf rule
 -- why quester and daily rank = 1?
