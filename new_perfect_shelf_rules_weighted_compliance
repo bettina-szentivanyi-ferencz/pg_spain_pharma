@@ -140,3 +140,10 @@ group by
 	cte_perfect_shelf_compliance_weighted.categ_name,
 	cte_perfect_shelf_compliance_weighted.brand,
 	cte_perfect_shelf_compliance_weighted.segment;
+	
+GRANT SELECT ON procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance  TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance  TO pg_es_pharma;
+
+
+COMMIT;
