@@ -1,6 +1,26 @@
- -- procter_and_gamble_es_pharma.product_availability source
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.product_availability CASCADE;
 
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.product_availability
+(
+  store_id,
+  owner_id,
+  visit_date_key,
+  visit_id,
+  analysis,
+  product_id,
+  product_ean,
+  own,
+  currnt_stat,
+  value,
+  out_of_stock,
+  ranking,
+  facings_tgt,
+  display_group,
+  seg1,
+  brand,
+  product_group_name
+)
+AS 
 SELECT a.store_id, a.owner_id, a.visit_date_key, b.visit_id, b.analysis, b.product_id, b.product_ean, b.own, b.currnt_stat, b.value, b.out_of_stock, b.ranking, b.facings_tgt, b.display_group, c.seg1, c.brand, '' as product_group_name
    FROM procter_and_gamble_es_pharma.storechecks_visit_fact_view a, procter_and_gamble_es_pharma.storechecks_product_fact b, procter_and_gamble_es_pharma.product_master c
   WHERE a.visit_id = b.visit_id AND b.product_id = c.product_id AND b.analysis::text = 'all_top_sku'::text
@@ -14,4 +34,11 @@ from procter_and_gamble_es_pharma.storechecks_kpi_fact skf
 	  join procter_and_gamble_es_pharma.product_master pm on skf.product_id = pm.product_id
 where visit_date_key >= '2021-10-01'
 	  and display_group like '%Visible p-sku distribution%'
-	  and skf.product_id != ''
+	  and skf.product_id != '';
+	  
+GRANT SELECT ON procter_and_gamble_es_pharma.product_availability TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.product_availability TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.product_availability TO pg_es_pharma;
+
+
+COMMIT;
