@@ -9,10 +9,10 @@ as
 (
 select
 	storechecks_kpi_fact.visit_id,
-	storechecks_visit_fact_view_fiscal_year_fiscal_year.visit_date_key,
-	storechecks_visit_fact_view_fiscal_year_fiscal_year.store_id,
-	storechecks_visit_fact_view_fiscal_year_fiscal_year.owner_id,
-	storechecks_visit_fact_view_fiscal_year_fiscal_year.categ_name,
+	storechecks_visit_fact_fiscal_year.visit_date_key,
+	storechecks_visit_fact_fiscal_year.store_id,
+	storechecks_visit_fact_fiscal_year.owner_id,
+	storechecks_visit_fact_fiscal_year.categ_name,
 	storechecks_kpi_fact.display_group,
 	split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 1)::character varying as brand,
 	split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 2)::character varying as segment,
@@ -70,25 +70,25 @@ select
 	perfect_shelf_weight.weight
 from
 	procter_and_gamble_es_pharma.storechecks_kpi_fact storechecks_kpi_fact,
-	procter_and_gamble_es_pharma.storechecks_visit_fact_view_fiscal_year_fiscal_year storechecks_visit_fact_view_fiscal_year_fiscal_year,
+	procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year,
 	procter_and_gamble_es_pharma.perfect_shelf_weight perfect_shelf_weight
 where
-	storechecks_kpi_fact.visit_id = storechecks_visit_fact_view_fiscal_year_fiscal_year.visit_id
+	storechecks_kpi_fact.visit_id = storechecks_visit_fact_fiscal_year.visit_id
 	and split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 1) = perfect_shelf_weight.brand::text
 	and storechecks_kpi_fact.display_group::text = perfect_shelf_weight.perfect_shelf_kpi::text
-	and storechecks_kpi_fact.fiscal_year_id::text = perfect_shelf_weight.fiscal_year_id::text
+	and storechecks_visit_fact_fiscal_year.fiscal_year_id::text = perfect_shelf_weight.fiscal_year_id::text
 	and storechecks_kpi_fact.kpi_group1::text <> ''::character varying::text
 	and storechecks_kpi_fact.display_group::text !~~ '%Share of%'::character varying::text
 	and split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 2) <> ''::character varying::text
-	and storechecks_visit_fact_view_fiscal_year_fiscal_year.quarter_rank = 1
-	and storechecks_visit_fact_view_fiscal_year_fiscal_year.daily_rank = 1
+	and storechecks_visit_fact_fiscal_year.quarter_rank = 1
+	and storechecks_visit_fact_fiscal_year.daily_rank = 1
 	and (storechecks_kpi_fact.kpi_group1::text || storechecks_kpi_fact.display_group::text) <> 'Oral B - POCOral B - Permanent Display'::character varying::text
 group by
 	storechecks_kpi_fact.visit_id,
-	storechecks_visit_fact_view_fiscal_year_fiscal_year.visit_date_key,
-	storechecks_visit_fact_view_fiscal_year_fiscal_year.store_id,
-	storechecks_visit_fact_view_fiscal_year_fiscal_year.owner_id,
-	storechecks_visit_fact_view_fiscal_year_fiscal_year.categ_name,
+	storechecks_visit_fact_fiscal_year.visit_date_key,
+	storechecks_visit_fact_fiscal_year.store_id,
+	storechecks_visit_fact_fiscal_year.owner_id,
+	storechecks_visit_fact_fiscal_year.categ_name,
 	storechecks_kpi_fact.display_group,
 	storechecks_kpi_fact.kpi_group1,
 	perfect_shelf_weight.weight),
