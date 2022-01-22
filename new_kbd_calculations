@@ -15,7 +15,8 @@ select
 	storechecks_visit_fact_fiscal_year.owner_id,
 	storechecks_visit_fact_fiscal_year.categ_name,
 	product_master.seg1,
-	product_master.brand
+	product_master.brand,
+	product_master.brand::text || storechecks_visit_fact_fiscal_year.fiscal_year_id::text as brand_sales_id
 from
 	procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year,
 	procter_and_gamble_es_pharma.product_master product_master
@@ -254,6 +255,7 @@ select
 	cte_visit_product_dim.owner_id,
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
+	cte_visit_product_dim.brand_sales_id,
 	cte_product_facing_fact.own_primary_facing,
 	cte_product_facing_fact.total_primary_facing,
 	cte_product_facing_fact.own_display_facing,
@@ -269,6 +271,10 @@ select
 	visibility_score_weight.sp_weight,
 	visibility_score_weight.tf_weight,
 	visibility_score_weight.pv_weight,
+	visibility_score_weight.psku_target,
+	visibility_score_weight.sp_target,
+	visibility_score_weight.tf_target,
+	visibility_score_weight.pv_target,
 	visibility_points_compliance.oc_compliance,
 	visibility_points_compliance.tzone_compliance,
 	cte_t_and_f_compliance.tf_compliance,
@@ -322,6 +328,7 @@ group by
 	cte_visit_product_dim.owner_id,
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
+	cte_visit_product_dim.brand_sales_id,
 	cte_product_facing_fact.own_primary_facing,
 	cte_product_facing_fact.total_primary_facing,
 	cte_product_facing_fact.own_display_facing,
@@ -337,6 +344,10 @@ group by
 	visibility_score_weight.pv_weight,
 	visibility_score_weight.sp_weight,	
 	visibility_score_weight.tf_weight,
+	visibility_score_weight.psku_target,
+	visibility_score_weight.sp_target,
+	visibility_score_weight.tf_target,
+	visibility_score_weight.pv_target,
 	visibility_points_compliance.oc_compliance,
 	visibility_points_compliance.tzone_compliance,
 	cte_t_and_f_compliance.tf_compliance,
