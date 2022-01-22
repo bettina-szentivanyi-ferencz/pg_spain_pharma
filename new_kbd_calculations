@@ -1,31 +1,26 @@
 DROP VIEW IF EXISTS procter_and_gamble_es_pharma.kbd_calculations CASCADE;
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.kbd_calculations AS
 with recursive
--- filtering visit data from storechecks_visit_fact_view and product data from product_master
+-- filtering visit data from storechecks_visit_fact_fiscal_year and product data from product_master
 cte_visit_product_dim
 -- old z
 as
 (
 select
 	distinct 
-    storechecks_visit_fact_view.visit_id,
-	storechecks_visit_fact_view.visit_date_key,
-	storechecks_visit_fact_view.store_id,
-	storechecks_visit_fact_view.owner_id,
-	storechecks_visit_fact_view.categ_name,
+  storechecks_visit_fact_fiscal_year.visit_id,
+	storechecks_visit_fact_fiscal_year.visit_date_key,
+	storechecks_visit_fact_fiscal_year.fiscal_year_id,
+	storechecks_visit_fact_fiscal_year.store_id,
+	storechecks_visit_fact_fiscal_year.owner_id,
+	storechecks_visit_fact_fiscal_year.categ_name,
 	product_master.seg1,
-	product_master.brand,
-	case
-		when visit_date_key between '2020-07-01' and '2021-12-31' then '20202021'::character varying::integer
-		when visit_date_key >= '2022-01-01' then '20212022'::character varying::integer
-
-		else null::integer
-	end as fiscal_year_id
+	product_master.brand
 from
-	procter_and_gamble_es_pharma.storechecks_visit_fact_view storechecks_visit_fact_view,
+	procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year,
 	procter_and_gamble_es_pharma.product_master product_master
 where
-	storechecks_visit_fact_view.categ_name::text = product_master.base::text
+	storechecks_visit_fact_fiscal_year.categ_name::text = product_master.base::text
 	and product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text
 	and product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text
 	and product_master.desc_j::text <> 'EXCLUDE'::character varying::text),
@@ -189,10 +184,10 @@ cte_t_and_f_presence
 as
 (
 select
-	storechecks_visit_fact_view.visit_id,
-	storechecks_visit_fact_view.visit_date_key,
-	storechecks_visit_fact_view.owner_id,
-	storechecks_visit_fact_view.store_id,
+	storechecks_visit_fact_fiscal_year.visit_id,
+	storechecks_visit_fact_fiscal_year.visit_date_key,
+	storechecks_visit_fact_fiscal_year.owner_id,
+	storechecks_visit_fact_fiscal_year.store_id,
 	product_master.base,
 	case
                     when storechecks_planogram_fact.product_id::text  
@@ -210,16 +205,16 @@ select
                 end) as touch_and_feel_point
 from
 	procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact,
-	procter_and_gamble_es_pharma.storechecks_visit_fact_view storechecks_visit_fact_view,
+	procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year,
 	procter_and_gamble_es_pharma.product_master product_master 
 where
-	storechecks_planogram_fact.visit_id = storechecks_visit_fact_view.visit_id
+	storechecks_planogram_fact.visit_id = storechecks_visit_fact_fiscal_year.visit_id
 	and storechecks_planogram_fact.product_id = product_master.product_id
 	group by
-	storechecks_visit_fact_view.visit_id,
-	storechecks_visit_fact_view.visit_date_key,
-	storechecks_visit_fact_view.owner_id,
-	storechecks_visit_fact_view.store_id,
+	storechecks_visit_fact_fiscal_year.visit_id,
+	storechecks_visit_fact_fiscal_year.visit_date_key,
+	storechecks_visit_fact_fiscal_year.owner_id,
+	storechecks_visit_fact_fiscal_year.store_id,
 	product_master.base,
 	segment,
 	product_master.brand),
