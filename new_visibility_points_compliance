@@ -74,10 +74,23 @@ group by
         	when (oc_compliance = 1 
         		or tzone_compliance = 1) then 1
         	else 0
-        end as sp_compliance  
+        end as sp_compliance,  
+        case
+        	when sum(perfect_shelf_rules_compliance.fa_compliance) is null then null::smallint
+        	when sum(perfect_shelf_rules_compliance.fa_compliance) = 1 then 1
+        	else 0
+        end as fa_compliance, 
+        case
+        	when sum(perfect_shelf_rules_compliance.bc_compliance) is null then null::smallint
+        	when sum(perfect_shelf_rules_compliance.bc_compliance) = 1 then 1
+        	else 0
+        end as bc_compliance 
    from cte_visibility_points
+   left join procter_and_gamble_es_pharma.perfect_shelf_rules_compliance perfect_shelf_rules_compliance on cte_visibility_points.visit_id=perfect_shelf_rules_compliance.visit_id
+   and cte_visibility_points.seg1::text =perfect_shelf_rules_compliance.segment::text 
+   and cte_visibility_points.brand::text =perfect_shelf_rules_compliance.brand::text 
    group by
-   	cte_visibility_points.visit_id, 
+  cte_visibility_points.visit_id, 
 	cte_visibility_points.visit_date_key, 
 	cte_visibility_points.owner_id, 
 	cte_visibility_points.store_id, 
@@ -86,7 +99,9 @@ group by
 	cte_visibility_points.brand,
 	oc_compliance,
 	tzone_compliance,
- 	sp_compliance;
+ 	sp_compliance,
+ 	fa_compliance,
+ 	bc_compliance;
 	
 GRANT SELECT ON procter_and_gamble_es_pharma.visibility_points_compliance  TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.visibility_points_compliance  TO plano_auto_export;
