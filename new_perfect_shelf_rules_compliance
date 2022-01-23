@@ -106,6 +106,7 @@ select
 	cte_perfect_shelf_compliance.brand,
 	cte_perfect_shelf_compliance.segment,
 	cte_perfect_shelf_compliance.display_group,
+	cte_perfect_shelf_compliance.weight,
 	sum(cte_perfect_shelf_compliance.compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as compliance,
 	sum(cte_perfect_shelf_compliance.fa_compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as fa_compliance,
 	sum(cte_perfect_shelf_compliance.bc_compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as bc_compliance
@@ -119,7 +120,8 @@ group by
 	cte_perfect_shelf_compliance.categ_name,
 	cte_perfect_shelf_compliance.brand,
 	cte_perfect_shelf_compliance.segment,
-	cte_perfect_shelf_compliance.display_group)
+	cte_perfect_shelf_compliance.display_group,
+	cte_perfect_shelf_compliance.weight)
 select
 	cte_perfect_shelf_compliance_weighted.visit_id,
 	cte_perfect_shelf_compliance_weighted.visit_date_key,
@@ -129,6 +131,7 @@ select
 	cte_perfect_shelf_compliance_weighted.brand,
 	cte_perfect_shelf_compliance_weighted.segment,
 	cte_perfect_shelf_compliance_weighted.display_group,
+	cte_perfect_shelf_compliance_weighted.weight,
 	sum(cte_perfect_shelf_compliance_weighted.compliance::double precision) * 1.0::double precision as compliance,
 	case
 	   WHEN cte_perfect_shelf_compliance_weighted.segment in ('POC','Toothpastes','Denture Adhesives','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics','Diagnostics','Pregnancy') THEN 
@@ -150,7 +153,8 @@ group by
 	cte_perfect_shelf_compliance_weighted.categ_name,
 	cte_perfect_shelf_compliance_weighted.brand,
 	cte_perfect_shelf_compliance_weighted.segment,
-	cte_perfect_shelf_compliance_weighted.display_group;
+	cte_perfect_shelf_compliance_weighted.display_group,
+	cte_perfect_shelf_compliance_weighted.weight;
 	
 GRANT SELECT ON procter_and_gamble_es_pharma.perfect_shelf_rules_compliance TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.perfect_shelf_rules_compliance  TO plano_auto_export;
