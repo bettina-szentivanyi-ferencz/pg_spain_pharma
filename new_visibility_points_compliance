@@ -60,14 +60,14 @@ group by
 	cte_visibility_points.brand, 
         CASE
             WHEN cte_visibility_points.on_counter_point > 1 
-            	and cte_visibility_points.seg1 in ('Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep') THEN 1
-            when cte_visibility_points.seg1 not in ('Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep') THEN null::smallint
+            	and cte_visibility_points.seg1 in ('Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN 1
+            when cte_visibility_points.seg1 not in ('Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN null::smallint
             ELSE 0
         END AS oc_compliance, 
         CASE
             WHEN cte_visibility_points.tzone_point > 1 
-            and cte_visibility_points.seg1 in ('POC','Toothpastes','Denture Adhesives','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN 1
-            WHEN cte_visibility_points.seg1 not in ('POC','Toothpastes','Denture Adhesives','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN null::smallint
+            and cte_visibility_points.seg1 in ('POC','Toothpastes','Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN 1
+            WHEN cte_visibility_points.seg1 not in ('POC','Toothpastes','Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN null::smallint
             ELSE 0
         END AS tzone_compliance,
         case
