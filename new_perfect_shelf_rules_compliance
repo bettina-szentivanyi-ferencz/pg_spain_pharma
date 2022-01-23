@@ -107,9 +107,9 @@ select
 	cte_perfect_shelf_compliance.segment,
 	cte_perfect_shelf_compliance.display_group,
 	cte_perfect_shelf_compliance.weight,
-	sum(cte_perfect_shelf_compliance.compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as compliance,
-	sum(cte_perfect_shelf_compliance.fa_compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as fa_compliance,
-	sum(cte_perfect_shelf_compliance.bc_compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as bc_compliance
+	sum(cte_perfect_shelf_compliance.compliance::double precision) * 1.0::double precision as compliance,
+	sum(cte_perfect_shelf_compliance.fa_compliance::double precision) * 1.0::double precision as fa_compliance,
+	sum(cte_perfect_shelf_compliance.bc_compliance::double precision) * 1.0::double precision as bc_compliance
 from
 	cte_perfect_shelf_compliance
 group by
