@@ -91,7 +91,12 @@ group by
 	storechecks_visit_fact_fiscal_year.categ_name,
 	storechecks_kpi_fact.display_group,
 	storechecks_kpi_fact.kpi_group1,
-	perfect_shelf_weight.weight)
+	perfect_shelf_weight.weight),
+	
+cte_perfect_shelf_compliance_weighted
+-- old pg_rules_staging
+as
+(
 select
 	cte_perfect_shelf_compliance.visit_id,
 	cte_perfect_shelf_compliance.visit_date_key,
@@ -101,7 +106,6 @@ select
 	cte_perfect_shelf_compliance.brand,
 	cte_perfect_shelf_compliance.segment,
 	cte_perfect_shelf_compliance.display_group,
-	cte_perfect_shelf_compliance.weight,
 	sum(cte_perfect_shelf_compliance.compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as compliance,
 	sum(cte_perfect_shelf_compliance.fa_compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as fa_compliance,
 	sum(cte_perfect_shelf_compliance.bc_compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as bc_compliance
@@ -115,8 +119,38 @@ group by
 	cte_perfect_shelf_compliance.categ_name,
 	cte_perfect_shelf_compliance.brand,
 	cte_perfect_shelf_compliance.segment,
-	cte_perfect_shelf_compliance.display_group,
-	cte_perfect_shelf_compliance.weight;
+	cte_perfect_shelf_compliance.display_group)
+select
+	cte_perfect_shelf_compliance_weighted.visit_id,
+	cte_perfect_shelf_compliance_weighted.visit_date_key,
+	cte_perfect_shelf_compliance_weighted.store_id,
+	cte_perfect_shelf_compliance_weighted.owner_id,
+	cte_perfect_shelf_compliance_weighted.categ_name,
+	cte_perfect_shelf_compliance_weighted.brand,
+	cte_perfect_shelf_compliance_weighted.segment,
+	cte_perfect_shelf_compliance_weighted.display_group,
+	sum(cte_perfect_shelf_compliance_weighted.compliance::double precision) * 1.0::double precision as compliance,
+	case
+	   WHEN cte_perfect_shelf_compliance_weighted.segment in ('POC','Toothpastes','Denture Adhesives','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics','Diagnostics','Pregnancy') THEN 
+			sum(cte_perfect_shelf_compliance_weighted.fa_compliance::double precision) * 1.0::double precision 
+			else null::smallint
+		end as fa_compliance,
+	case
+	   WHEN cte_perfect_shelf_compliance_weighted.segment in ('MSR','Nasal Deco','Rubs','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN 
+	   sum(cte_perfect_shelf_compliance_weighted.bc_compliance::double precision) * 1.0::double precision 
+	   else null::smallint
+	end as bc_compliance
+from
+	cte_perfect_shelf_compliance_weighted
+group by
+	cte_perfect_shelf_compliance_weighted.visit_id,
+	cte_perfect_shelf_compliance_weighted.visit_date_key,
+	cte_perfect_shelf_compliance_weighted.store_id,
+	cte_perfect_shelf_compliance_weighted.owner_id,
+	cte_perfect_shelf_compliance_weighted.categ_name,
+	cte_perfect_shelf_compliance_weighted.brand,
+	cte_perfect_shelf_compliance_weighted.segment,
+	cte_perfect_shelf_compliance_weighted.display_group;
 	
 GRANT SELECT ON procter_and_gamble_es_pharma.perfect_shelf_rules_compliance TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.perfect_shelf_rules_compliance  TO plano_auto_export;
