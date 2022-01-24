@@ -1,0 +1,54 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.category_compliance CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.category_compliance AS
+with recursive
+-- filtering visit data from storechecks_visit_fact_fiscal_year and product data from product_master
+cte_count_own_brand_per_category
+-- old z
+as
+(
+select
+	kbd_calculations.store_id,
+	kbd_calculations.internal_code,
+	kbd_calculations.visit_date_key,
+	kbd_calculations.categ_name,
+	kbd_calculations.owner_id,
+	count(distinct brand) as count_own_brand 
+from
+	procter_and_gamble_es_pharma.kbd_calculations
+	where own_primary_facing is not null
+group by
+	kbd_calculations.store_id,
+	kbd_calculations.internal_code,
+	kbd_calculations.visit_id,
+	kbd_calculations.visit_date_key,
+	kbd_calculations.categ_name,
+	kbd_calculations.owner_id)
+select	
+	cte_count_own_brand_per_category.store_id,
+	cte_count_own_brand_per_category.internal_code,
+	cte_count_own_brand_per_category.visit_date_key,
+	cte_count_own_brand_per_category.categ_name,
+	cte_count_own_brand_per_category.owner_id,
+	case
+        	when (cte_count_own_brand_per_category.categ_name='Cuidado Oral - Oral Care'::text and  cte_count_own_brand_per_category.count_own_brand=2) 
+        	or (cte_count_own_brand_per_category.categ_name='Diagnóstico - Pregnancy'::text and  cte_count_own_brand_per_category.count_own_brand=1) 
+        	or (cte_count_own_brand_per_category.categ_name='Respiratorio - Cough & Cold'::text and  cte_count_own_brand_per_category.count_own_brand=2)
+        	or (cte_count_own_brand_per_category.categ_name='Vitaminas - Vitamins'::text and  cte_count_own_brand_per_category.count_own_brand=5)
+        	then 1
+        	else 0
+        end as compliance
+    from cte_count_own_brand_per_category
+group by
+	cte_count_own_brand_per_category.store_id,
+	cte_count_own_brand_per_category.internal_code,
+	cte_count_own_brand_per_category.visit_date_key,
+	cte_count_own_brand_per_category.categ_name,
+	cte_count_own_brand_per_category.owner_id,
+	compliance;
+	
+GRANT SELECT ON procter_and_gamble_es_pharma.category_compliance TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.category_compliance TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.category_compliance TO pg_es_pharma;
+
+
+COMMIT;
