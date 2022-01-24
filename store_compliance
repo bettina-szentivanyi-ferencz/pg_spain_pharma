@@ -1,0 +1,36 @@
+with recursive
+cte_count_category
+-- old z
+as
+(
+select
+	kbd_calculations.store_id,
+	kbd_calculations.internal_code,
+	kbd_calculations.visit_date_key,
+	kbd_calculations.owner_id,
+	kbd_calculations.categ_name,
+    count(distinct(kbd_calculations.categ_name)) as count_category
+from
+	procter_and_gamble_es_pharma.kbd_calculations
+group by
+	kbd_calculations.store_id,
+	kbd_calculations.internal_code,
+	kbd_calculations.visit_date_key,
+	kbd_calculations.owner_id,
+	kbd_calculations.categ_name)
+select
+	cte_count_category.store_id,
+	cte_count_category.internal_code,
+	cte_count_category.visit_date_key,
+	cte_count_category.owner_id,
+	sum(
+	case when cte_count_category.categ_name in('Cuidado Oral - Oral Care','Diagnóstico - Pregnancy','Respiratorio - Cough & Cold','Vitaminas - Vitamins')
+	then cte_count_category.count_category::integer
+	else  null::double precision
+	end) as count_category
+	from cte_count_category
+	group by
+	cte_count_category.store_id,
+	cte_count_category.internal_code,
+	cte_count_category.visit_date_key,
+	cte_count_category.owner_id;
