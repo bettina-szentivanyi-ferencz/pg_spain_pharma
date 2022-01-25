@@ -1,0 +1,97 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.calendar_view CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.calendar_view
+(
+date_key,
+date,
+year,
+month_name,
+year_month,
+quarter_name,
+year_quarter,
+month_no,
+quarter_no,
+yearid,
+year_month_no
+)
+AS 
+with recursive
+cte_calendar
+as
+(
+select distinct 
+calendar_table.date_key,
+calendar_table.date,
+date_part(day, date(calendar_table.date)) as day,
+date_part(month, date(calendar_table.date)) as month_no,
+date_part(quarter, date(calendar_table.date)) as quarter_no,
+date_part(year, date(calendar_table.date)) as year,
+case 
+	when date_part(month, date(calendar_table.date))in(1,2,3) then 'JAS'::text
+	when date_part(month, date(calendar_table.date))in(4,5,6) then 'AMJ'::text
+	when date_part(month, date(calendar_table.date))in(7,8,9) then 'JAS'::text
+	when date_part(month, date(calendar_table.date))in(10,11,12) then 'OND'::text
+	else  ''
+	end as quarter_name,
+case 
+	when date_part(month, date(calendar_table.date))in(1) then 'January'::text
+	when date_part(month, date(calendar_table.date))in(2) then 'February'::text
+	when date_part(month, date(calendar_table.date))in(3) then 'March'::text
+	when date_part(month, date(calendar_table.date))in(4) then 'April'::text
+	when date_part(month, date(calendar_table.date))in(5) then 'May'::text
+	when date_part(month, date(calendar_table.date))in(6) then 'June'::text
+	when date_part(month, date(calendar_table.date))in(7) then 'July'::text
+	when date_part(month, date(calendar_table.date))in(8) then 'August'::text
+	when date_part(month, date(calendar_table.date))in(9) then 'September'::text
+	when date_part(month, date(calendar_table.date))in(10) then 'October'::text
+	when date_part(month, date(calendar_table.date))in(11) then 'November'::text
+	when date_part(month, date(calendar_table.date))in(12) then 'December'::text
+	else  ''
+	end as month_name,
+case 
+	when date_part(year, date(calendar_table.date))in(2019) then 0::integer
+	when date_part(year, date(calendar_table.date))in(2020) then 1::integer
+	when date_part(year, date(calendar_table.date))in(2021) then 2::integer
+	when date_part(year, date(calendar_table.date))in(2022) then 3::integer
+	when date_part(year, date(calendar_table.date))in(2023) then 4::integer
+	when date_part(year, date(calendar_table.date))in(2024) then 5::integer
+	when date_part(year, date(calendar_table.date))in(2026) then 6::integer
+	when date_part(year, date(calendar_table.date))in(2027) then 7::integer
+	else  null::integer
+	end as yearid,
+left(calendar_table.date::text, 7) as year_month
+from procter_and_gamble_es_pharma.calendar_table)
+select
+cte_calendar.date_key,
+cte_calendar.date,
+cte_calendar.year,
+cte_calendar.month_name,
+cte_calendar.year::text+' '+cte_calendar.month_name::text as year_month,
+cte_calendar.quarter_name,
+cte_calendar.year::text+' '+cte_calendar.quarter_name::text as year_quarter,
+cte_calendar.month_no,
+cte_calendar.quarter_no,
+cte_calendar.yearid,
+sum(coalesce(cte_calendar.year,0) + coalesce(cte_calendar.month_no,0))*0.01 as year_month_no
+from cte_calendar
+group by 
+cte_calendar.date_key,
+cte_calendar.date,
+cte_calendar.year,
+cte_calendar.month_name,
+year_month,
+cte_calendar.quarter_name,
+year_quarter,
+cte_calendar.month_no,
+cte_calendar.quarter_no,
+cte_calendar.yearid
+;
+
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.calendar_view TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.calendar_view TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.calendar_view TO pg_es_pharma;
+
+
+COMMIT;
