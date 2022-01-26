@@ -59,8 +59,13 @@ case
 	when date_part(year, date(calendar_table.date))in(2027) then 7::integer
 	else  null::integer
 	end as yearid,
-left(calendar_table.date::text, 7) as year_month
-from procter_and_gamble_es_pharma.calendar_table)
+	left(calendar_table.date::text, 7) as year_month
+from 
+procter_and_gamble_es_pharma.calendar_table calendar_table
+where 
+calendar_table.date_key <= (SELECT max(storechecks_visit_fact_fiscal_year.visit_date_key) from procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year)
+order by date_key
+)
 select
 cte_calendar.date_key,
 cte_calendar.date,
