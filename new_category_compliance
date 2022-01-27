@@ -12,10 +12,10 @@ select
 	kbd_calculations.visit_date_key,
 	kbd_calculations.categ_name,
 	kbd_calculations.owner_id,
-	count(distinct brand) as count_own_brand 
+	count(distinct
+	case when own_primary_facing is not null then  kbd_calculations.brand end) as count_own_brand
 from
 	procter_and_gamble_es_pharma.kbd_calculations
-	where own_primary_facing is not null
 group by
 	kbd_calculations.store_id,
 	kbd_calculations.internal_code,
@@ -30,10 +30,11 @@ select
 	cte_count_own_brand_per_category.categ_name,
 	cte_count_own_brand_per_category.owner_id,
 	case
-        	when (cte_count_own_brand_per_category.categ_name='Cuidado Oral - Oral Care'::text and  cte_count_own_brand_per_category.count_own_brand=2) 
-        	or (cte_count_own_brand_per_category.categ_name='Diagnóstico - Pregnancy'::text and  cte_count_own_brand_per_category.count_own_brand=1) 
-        	or (cte_count_own_brand_per_category.categ_name='Respiratorio - Cough & Cold'::text and  cte_count_own_brand_per_category.count_own_brand=2)
-        	or (cte_count_own_brand_per_category.categ_name='Vitaminas - Vitamins'::text and  cte_count_own_brand_per_category.count_own_brand=5)
+        	when (cte_count_own_brand_per_category.categ_name='Cuidado Oral - Oral Care'::text and  cte_count_own_brand_per_category.count_own_brand>0) 
+        	or (cte_count_own_brand_per_category.categ_name='Diagnóstico - Pregnancy'::text and  cte_count_own_brand_per_category.count_own_brand>0) 
+        	or (cte_count_own_brand_per_category.categ_name='Respiratorio - Cough & Cold'::text and  cte_count_own_brand_per_category.count_own_brand>0)
+        	or (cte_count_own_brand_per_category.categ_name='Vitaminas - Vitamins'::text and  cte_count_own_brand_per_category.count_own_brand>0)
+        	or (cte_count_own_brand_per_category.categ_name='Cuidado Bebé - Baby Care'::text and  cte_count_own_brand_per_category.count_own_brand>0)
         	then 1
         	else 0
         end as compliance
