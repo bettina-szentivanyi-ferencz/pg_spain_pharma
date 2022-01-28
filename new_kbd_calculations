@@ -41,14 +41,28 @@ select
                     and product_master.desc_j::text = 'INCLUDE'::character varying::text 
                     and storechecks_planogram_fact.own = 1 then storechecks_planogram_fact.facings::double precision
                     else null::double precision
-                end) as own_primary_facing,
+                end) as own_primary_shelf_facing,
+     sum(
+                case
+                    when storechecks_planogram_fact.photo_group_type::text <> 'Otros'::character varying::text
+                    and product_master.desc_j::text = 'INCLUDE'::character varying::text 
+                    and storechecks_planogram_fact.own = 1 then storechecks_planogram_fact.facings::double precision
+                    else null::double precision
+                end) as own_total_shelf_facing,
 	sum(
                 case
                     when storechecks_planogram_fact.photo_group_type::text in ('Lineal'::character varying::text,'Lineal libre acceso'::character varying::text,'Lineal detrás del mostrador'::character varying::text)  
                     and product_master.desc_j::text = 'INCLUDE'::character varying::text 
                     then storechecks_planogram_fact.facings::double precision
                     else null::double precision
-                end) as total_primary_facing
+                end) as brand_primary_shelf_facing,
+    sum(
+                case
+                    when storechecks_planogram_fact.photo_group_type::text <> 'Otros'::character varying::text
+                    and product_master.desc_j::text = 'INCLUDE'::character varying::text 
+                    then storechecks_planogram_fact.facings::double precision
+                    else null::double precision
+                end) as brand_total_shelf_facing
 from
 	procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact,
 	procter_and_gamble_es_pharma.product_master product_master
@@ -73,7 +87,14 @@ select
             and product_master.desc_j::text = 'INCLUDE'::character varying::text 
             then storechecks_planogram_fact.facings::double precision
             else null::double precision
-        end) as primary_facing
+        end) as total_primary_shelf_facing,
+    sum(
+        case
+            when storechecks_planogram_fact.photo_group_type::text <> 'Otros'::character varying::text
+            and product_master.desc_j::text = 'INCLUDE'::character varying::text 
+            then storechecks_planogram_fact.facings::double precision
+            else null::double precision
+        end) as total_shelf_facing
 from
 	procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact,
 	procter_and_gamble_es_pharma.product_master product_master
@@ -236,9 +257,12 @@ select
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
 	cte_visit_product_dim.brand_sales_id,
-	cte_product_facing_fact.own_primary_facing,
-	cte_product_facing_fact.total_primary_facing,
-	cte_product_facing_fact_segment.primary_facing,
+	cte_product_facing_fact.own_primary_shelf_facing,
+	cte_product_facing_fact.own_total_shelf_facing,
+	cte_product_facing_fact.brand_primary_shelf_facing,
+	cte_product_facing_fact.brand_total_shelf_facing,
+	cte_product_facing_fact_segment.total_primary_shelf_facing,
+	cte_product_facing_fact_segment.total_shelf_facing,
 	cte_product_count.present_count,
 	cte_product_count.oos_count,
 	visibility_score_weight.psku_weight,
@@ -296,6 +320,7 @@ left join procter_and_gamble_es_pharma.visibility_points_compliance visibility_p
 left join cte_t_and_f_compliance on cte_visit_product_dim.visit_id = cte_t_and_f_compliance.visit_id
 and cte_visit_product_dim.brand::text = cte_t_and_f_compliance.brand::text  
 and cte_visit_product_dim.seg1::text = cte_t_and_f_compliance.segment::text 
+where cte_visit_product_dim.visit_id='61b24434bfe6e30006243dbb'
 group by
 	cte_visit_product_dim.store_id,
 	store_master.internal_code,
@@ -306,9 +331,12 @@ group by
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
 	cte_visit_product_dim.brand_sales_id,
-	cte_product_facing_fact.own_primary_facing,
-	cte_product_facing_fact.total_primary_facing,
-	cte_product_facing_fact_segment.primary_facing,
+	cte_product_facing_fact.own_primary_shelf_facing,
+	cte_product_facing_fact.own_total_shelf_facing,
+	cte_product_facing_fact.brand_primary_shelf_facing,
+	cte_product_facing_fact.brand_total_shelf_facing,
+	cte_product_facing_fact_segment.total_primary_shelf_facing,
+	cte_product_facing_fact_segment.total_shelf_facing,
 	cte_product_count.present_count,
 	cte_product_count.oos_count,
 	visibility_score_weight.psku_weight,
