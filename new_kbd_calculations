@@ -320,7 +320,6 @@ left join procter_and_gamble_es_pharma.visibility_points_compliance visibility_p
 left join cte_t_and_f_compliance on cte_visit_product_dim.visit_id = cte_t_and_f_compliance.visit_id
 and cte_visit_product_dim.brand::text = cte_t_and_f_compliance.brand::text  
 and cte_visit_product_dim.seg1::text = cte_t_and_f_compliance.segment::text 
-where cte_visit_product_dim.visit_id='61b24434bfe6e30006243dbb'
 group by
 	cte_visit_product_dim.store_id,
 	store_master.internal_code,
