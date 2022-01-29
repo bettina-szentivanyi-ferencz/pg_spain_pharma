@@ -6,25 +6,33 @@ cte_count_category
 as
 (
 select
-	kbd_calculations.store_id,
-	kbd_calculations.internal_code,
-	kbd_calculations.visit_date_key,
-	kbd_calculations.owner_id,
-	kbd_calculations.categ_name,
-    count(distinct(kbd_calculations.categ_name)) as count_category
+	distinct 
+  storechecks_visit_fact_fiscal_year.visit_id,
+	storechecks_visit_fact_fiscal_year.visit_date_key,
+	storechecks_visit_fact_fiscal_year.fiscal_year_id,
+	storechecks_visit_fact_fiscal_year.store_id,
+	storechecks_visit_fact_fiscal_year.owner_id,
+	storechecks_visit_fact_fiscal_year.categ_name,
+	count(distinct(storechecks_visit_fact_fiscal_year.categ_name)) as count_category
 from
-	procter_and_gamble_es_pharma.kbd_calculations
+	procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year,
+	procter_and_gamble_es_pharma.product_master product_master
+where
+	storechecks_visit_fact_fiscal_year.categ_name::text = product_master.base::text
+	and product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text
+	and product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text
+	and product_master.desc_j::text <> 'EXCLUDE'::character varying::text
 group by
-	kbd_calculations.store_id,
-	kbd_calculations.internal_code,
-	kbd_calculations.visit_date_key,
-	kbd_calculations.owner_id,
-	kbd_calculations.categ_name),
+  storechecks_visit_fact_fiscal_year.visit_id,
+	storechecks_visit_fact_fiscal_year.visit_date_key,
+	storechecks_visit_fact_fiscal_year.fiscal_year_id,
+	storechecks_visit_fact_fiscal_year.store_id,
+	storechecks_visit_fact_fiscal_year.owner_id,
+	storechecks_visit_fact_fiscal_year.categ_name),
 cte_priority_category
 as (
 select
 	cte_count_category.store_id,
-	cte_count_category.internal_code,
 	cte_count_category.visit_date_key,
 	cte_count_category.owner_id,
 	sum(
@@ -36,21 +44,19 @@ select
 	and date_part(month, date(cte_count_category.visit_date_key))in(4,5,6))
 	then cte_count_category.count_category::integer
 	else  0
-	end) as count_category,
+	end) as count_category, -- count priority category
 	case 
 	when date_part(month, date(cte_count_category.visit_date_key))in(1,2,3,7,8,9,10,11,12) then 4::integer
 	when date_part(month, date(cte_count_category.visit_date_key))in(4,5,6) then 3::integer
 	else  null::double precision
-	end as target_category
+	end as target_category -- target priority category
 	from cte_count_category
 	group by
 	cte_count_category.store_id,
-	cte_count_category.internal_code,
 	cte_count_category.visit_date_key,
 	cte_count_category.owner_id)
 select 
 	cte_priority_category.store_id,
-	cte_priority_category.internal_code,
 	cte_priority_category.visit_date_key,
 	cte_priority_category.owner_id,
 	cte_priority_category.count_category,
@@ -58,11 +64,10 @@ select
 	case 
 	when cte_priority_category.count_category::integer = cte_priority_category.target_category::integer  then 1
 	else  0
-	end as store_compliance
+	end as store_compliance -- perfect_report_compliance,	
 from cte_priority_category
 	group by
 	cte_priority_category.store_id,
-	cte_priority_category.internal_code,
 	cte_priority_category.visit_date_key,
 	cte_priority_category.owner_id,
 	cte_priority_category.count_category,
