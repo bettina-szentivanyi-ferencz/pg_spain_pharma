@@ -13,7 +13,7 @@ select
 	kbd_calculations.categ_name,
 	kbd_calculations.owner_id,
 	count(distinct
-	case when own_primary_facing is not null then  kbd_calculations.brand end) as count_own_brand
+	case when own_primary_shelf_facing is not null then  kbd_calculations.brand end) as count_own_brand
 from
 	procter_and_gamble_es_pharma.kbd_calculations
 group by
