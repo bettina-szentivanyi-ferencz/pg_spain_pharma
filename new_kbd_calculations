@@ -257,6 +257,10 @@ select
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
 	cte_visit_product_dim.brand_sales_id,
+	store_compliance.store_compliance as perfect_report_compliance,
+	store_compliance.count_category as count_primary_category,
+	store_compliance.target_category as target_primary_category,
+	store_compliance.total_category as count_category,
 	cte_product_facing_fact.own_primary_shelf_facing,
 	cte_product_facing_fact.own_total_shelf_facing,
 	cte_product_facing_fact.brand_primary_shelf_facing,
@@ -291,6 +295,7 @@ select
         		and perfect_shelf_rules_weighted_compliance.bc_compliance is null) then null::smallint
         	else sum(coalesce(perfect_shelf_rules_weighted_compliance.bc_compliance,0) + coalesce(visibility_points_compliance.oc_compliance,0) + coalesce(visibility_points_compliance.tzone_compliance,0)+ coalesce(perfect_shelf_rules_weighted_compliance.fa_compliance,0))
         end as mv_points
+       
 from
 	cte_visit_product_dim
 left join procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance perfect_shelf_rules_weighted_compliance on
@@ -320,6 +325,8 @@ left join procter_and_gamble_es_pharma.visibility_points_compliance visibility_p
 left join cte_t_and_f_compliance on cte_visit_product_dim.visit_id = cte_t_and_f_compliance.visit_id
 and cte_visit_product_dim.brand::text = cte_t_and_f_compliance.brand::text  
 and cte_visit_product_dim.seg1::text = cte_t_and_f_compliance.segment::text 
+left join procter_and_gamble_es_pharma.store_compliance store_compliance on store_compliance.store_id  = cte_visit_product_dim.store_id 
+and store_compliance.visit_date_key = cte_visit_product_dim.visit_date_key
 group by
 	cte_visit_product_dim.store_id,
 	store_master.internal_code,
@@ -330,6 +337,10 @@ group by
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
 	cte_visit_product_dim.brand_sales_id,
+	store_compliance.store_compliance, 
+	store_compliance.count_category,
+	store_compliance.target_category,
+	store_compliance.total_category,
 	cte_product_facing_fact.own_primary_shelf_facing,
 	cte_product_facing_fact.own_total_shelf_facing,
 	cte_product_facing_fact.brand_primary_shelf_facing,
