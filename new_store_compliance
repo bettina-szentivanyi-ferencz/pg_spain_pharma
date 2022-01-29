@@ -7,7 +7,6 @@ as
 (
 select
 	distinct 
-  storechecks_visit_fact_fiscal_year.visit_id,
 	storechecks_visit_fact_fiscal_year.visit_date_key,
 	storechecks_visit_fact_fiscal_year.fiscal_year_id,
 	storechecks_visit_fact_fiscal_year.store_id,
@@ -23,7 +22,6 @@ where
 	and product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text
 	and product_master.desc_j::text <> 'EXCLUDE'::character varying::text
 group by
-  storechecks_visit_fact_fiscal_year.visit_id,
 	storechecks_visit_fact_fiscal_year.visit_date_key,
 	storechecks_visit_fact_fiscal_year.fiscal_year_id,
 	storechecks_visit_fact_fiscal_year.store_id,
@@ -49,7 +47,8 @@ select
 	when date_part(month, date(cte_count_category.visit_date_key))in(1,2,3,7,8,9,10,11,12) then 4::integer
 	when date_part(month, date(cte_count_category.visit_date_key))in(4,5,6) then 3::integer
 	else  null::double precision
-	end as target_category -- target priority category
+	end as target_category,
+	sum(count_category) as total_category -- target priority category
 	from cte_count_category
 	group by
 	cte_count_category.store_id,
@@ -60,9 +59,10 @@ select
 	cte_priority_category.visit_date_key,
 	cte_priority_category.owner_id,
 	cte_priority_category.count_category,
+	cte_priority_category.total_category,
 	cte_priority_category.target_category,
 	case 
-	when cte_priority_category.count_category::integer = cte_priority_category.target_category::integer  then 1
+	when cte_priority_category.count_category::integer >= cte_priority_category.target_category::integer  then 1
 	else  0
 	end as store_compliance -- perfect_report_compliance,	
 from cte_priority_category
@@ -71,6 +71,7 @@ from cte_priority_category
 	cte_priority_category.visit_date_key,
 	cte_priority_category.owner_id,
 	cte_priority_category.count_category,
+	cte_priority_category.total_category,
 	cte_priority_category.target_category,
 	store_compliance;
 
