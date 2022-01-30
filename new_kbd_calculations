@@ -270,6 +270,7 @@ group by
 cte_category_compliance
 -- old z
 as
+(
 select	
 	cte_count_own_brand_per_category.store_id,
 	cte_count_own_brand_per_category.visit_date_key,
@@ -281,8 +282,8 @@ select
         	or (cte_count_own_brand_per_category.categ_name='Respiratorio - Cough & Cold'::text and  cte_count_own_brand_per_category.count_own_brand>0)
         	or (cte_count_own_brand_per_category.categ_name='Vitaminas - Vitamins'::text and  cte_count_own_brand_per_category.count_own_brand>0)
         	or (cte_count_own_brand_per_category.categ_name='Cuidado Bebé - Baby Care'::text and  cte_count_own_brand_per_category.count_own_brand>0)
-        	then 1
-        	else 0
+        	then 1::integer
+        	else 0::integer
         end as category_compliance
     from cte_count_own_brand_per_category
 group by
@@ -290,7 +291,7 @@ group by
 	cte_count_own_brand_per_category.visit_date_key,
 	cte_count_own_brand_per_category.categ_name,
 	cte_count_own_brand_per_category.owner_id,
-	category_compliance;)
+	category_compliance)
 select
 	cte_visit_product_dim.store_id,
 	store_master.internal_code,
@@ -370,8 +371,14 @@ left join procter_and_gamble_es_pharma.visibility_points_compliance visibility_p
 left join cte_t_and_f_compliance on cte_visit_product_dim.visit_id = cte_t_and_f_compliance.visit_id
 and cte_visit_product_dim.brand::text = cte_t_and_f_compliance.brand::text  
 and cte_visit_product_dim.seg1::text = cte_t_and_f_compliance.segment::text 
-left join procter_and_gamble_es_pharma.store_compliance store_compliance on store_compliance.store_id  = cte_visit_product_dim.store_id 
+left join procter_and_gamble_es_pharma.store_compliance store_compliance 
+on store_compliance.store_id  = cte_visit_product_dim.store_id 
 and store_compliance.visit_date_key = cte_visit_product_dim.visit_date_key
+left join cte_category_compliance cte_category_compliance 
+on cte_category_compliance.store_id  = cte_visit_product_dim.store_id
+and cte_category_compliance.visit_date_key  = cte_visit_product_dim.visit_date_key
+and cte_category_compliance.categ_name = cte_visit_product_dim.categ_name
+where cte_visit_product_dim.store_id='5c2e1b74b3de52000199bc50' and cte_visit_product_dim.visit_date_key='2020-09-08'
 group by
 	cte_visit_product_dim.store_id,
 	store_master.internal_code,
