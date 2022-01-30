@@ -246,7 +246,51 @@ SELECT
 	cte_t_and_f_presence.base, 
 	cte_t_and_f_presence.segment, 
 	cte_t_and_f_presence.brand,
-	tf_compliance)
+	tf_compliance),
+cte_count_own_brand_per_category
+-- old z
+as
+(
+select
+	cte_visit_product_dim.store_id,
+	cte_visit_product_dim.visit_date_key,
+	cte_visit_product_dim.categ_name,
+	cte_visit_product_dim.owner_id,
+	count(distinct
+	case when cte_product_facing_fact.own_primary_shelf_facing is not null then  cte_visit_product_dim.brand end) as count_own_brand
+from
+	cte_visit_product_dim, cte_product_facing_fact
+	where cte_visit_product_dim.visit_id=cte_product_facing_fact.visit_id
+group by
+	cte_visit_product_dim.store_id,
+	cte_visit_product_dim.visit_date_key,
+	cte_visit_product_dim.categ_name,
+	cte_visit_product_dim.owner_id
+),
+cte_category_compliance
+-- old z
+as
+select	
+	cte_count_own_brand_per_category.store_id,
+	cte_count_own_brand_per_category.visit_date_key,
+	cte_count_own_brand_per_category.categ_name,
+	cte_count_own_brand_per_category.owner_id,
+	case
+        	when (cte_count_own_brand_per_category.categ_name='Cuidado Oral - Oral Care'::text and  cte_count_own_brand_per_category.count_own_brand>0) 
+        	or (cte_count_own_brand_per_category.categ_name='Diagnóstico - Pregnancy'::text and  cte_count_own_brand_per_category.count_own_brand>0) 
+        	or (cte_count_own_brand_per_category.categ_name='Respiratorio - Cough & Cold'::text and  cte_count_own_brand_per_category.count_own_brand>0)
+        	or (cte_count_own_brand_per_category.categ_name='Vitaminas - Vitamins'::text and  cte_count_own_brand_per_category.count_own_brand>0)
+        	or (cte_count_own_brand_per_category.categ_name='Cuidado Bebé - Baby Care'::text and  cte_count_own_brand_per_category.count_own_brand>0)
+        	then 1
+        	else 0
+        end as category_compliance
+    from cte_count_own_brand_per_category
+group by
+	cte_count_own_brand_per_category.store_id,
+	cte_count_own_brand_per_category.visit_date_key,
+	cte_count_own_brand_per_category.categ_name,
+	cte_count_own_brand_per_category.owner_id,
+	category_compliance;)
 select
 	cte_visit_product_dim.store_id,
 	store_master.internal_code,
@@ -257,6 +301,7 @@ select
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
 	cte_visit_product_dim.brand_sales_id,
+	cte_category_compliance.category_compliance,
 	store_compliance.store_compliance as perfect_report_compliance,
 	store_compliance.count_category as count_primary_category,
 	store_compliance.target_category as target_primary_category,
@@ -337,6 +382,7 @@ group by
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
 	cte_visit_product_dim.brand_sales_id,
+	cte_category_compliance.category_compliance,
 	store_compliance.store_compliance, 
 	store_compliance.count_category,
 	store_compliance.target_category,
