@@ -255,7 +255,6 @@ select
 	cte_visit_product_dim.store_id,
 	cte_visit_product_dim.visit_date_key,
 	cte_visit_product_dim.categ_name,
-	cte_visit_product_dim.owner_id,
 	count(distinct
 	case when cte_product_facing_fact.own_primary_shelf_facing is not null then  cte_visit_product_dim.brand end) as count_own_brand
 from
@@ -264,8 +263,7 @@ from
 group by
 	cte_visit_product_dim.store_id,
 	cte_visit_product_dim.visit_date_key,
-	cte_visit_product_dim.categ_name,
-	cte_visit_product_dim.owner_id
+	cte_visit_product_dim.categ_name
 ),
 cte_category_compliance
 -- old z
