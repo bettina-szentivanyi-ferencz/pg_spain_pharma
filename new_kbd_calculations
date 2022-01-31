@@ -275,7 +275,6 @@ select
 	cte_count_own_brand_per_category.store_id,
 	cte_count_own_brand_per_category.visit_date_key,
 	cte_count_own_brand_per_category.categ_name,
-	cte_count_own_brand_per_category.owner_id,
 	case
         	when (cte_count_own_brand_per_category.categ_name='Cuidado Oral - Oral Care'::text and  cte_count_own_brand_per_category.count_own_brand>0) 
         	or (cte_count_own_brand_per_category.categ_name='Diagnóstico - Pregnancy'::text and  cte_count_own_brand_per_category.count_own_brand>0) 
@@ -290,7 +289,6 @@ group by
 	cte_count_own_brand_per_category.store_id,
 	cte_count_own_brand_per_category.visit_date_key,
 	cte_count_own_brand_per_category.categ_name,
-	cte_count_own_brand_per_category.owner_id,
 	category_compliance)
 select
 	cte_visit_product_dim.store_id,
@@ -378,7 +376,6 @@ left join cte_category_compliance cte_category_compliance
 on cte_category_compliance.store_id  = cte_visit_product_dim.store_id
 and cte_category_compliance.visit_date_key  = cte_visit_product_dim.visit_date_key
 and cte_category_compliance.categ_name = cte_visit_product_dim.categ_name
-where cte_visit_product_dim.store_id='5c2e1b74b3de52000199bc50' and cte_visit_product_dim.visit_date_key='2020-09-08'
 group by
 	cte_visit_product_dim.store_id,
 	store_master.internal_code,
