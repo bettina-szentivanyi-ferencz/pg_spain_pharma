@@ -10,7 +10,6 @@ select
 	storechecks_visit_fact_fiscal_year.visit_date_key,
 	storechecks_visit_fact_fiscal_year.fiscal_year_id,
 	storechecks_visit_fact_fiscal_year.store_id,
-	storechecks_visit_fact_fiscal_year.owner_id,
 	storechecks_visit_fact_fiscal_year.categ_name,
 	count(distinct(storechecks_visit_fact_fiscal_year.categ_name)) as count_category
 from
@@ -25,14 +24,12 @@ group by
 	storechecks_visit_fact_fiscal_year.visit_date_key,
 	storechecks_visit_fact_fiscal_year.fiscal_year_id,
 	storechecks_visit_fact_fiscal_year.store_id,
-	storechecks_visit_fact_fiscal_year.owner_id,
 	storechecks_visit_fact_fiscal_year.categ_name),
 cte_priority_category
 as (
 select
 	cte_count_category.store_id,
 	cte_count_category.visit_date_key,
-	cte_count_category.owner_id,
 	sum(
 	case 
 	when (cte_count_category.categ_name in('Cuidado Oral - Oral Care','Diagnóstico - Pregnancy','Respiratorio - Cough & Cold','Vitaminas - Vitamins')
@@ -52,12 +49,10 @@ select
 	from cte_count_category
 	group by
 	cte_count_category.store_id,
-	cte_count_category.visit_date_key,
-	cte_count_category.owner_id)
+	cte_count_category.visit_date_key)
 select 
 	cte_priority_category.store_id,
 	cte_priority_category.visit_date_key,
-	cte_priority_category.owner_id,
 	cte_priority_category.count_category,
 	cte_priority_category.total_category,
 	cte_priority_category.target_category,
@@ -69,7 +64,6 @@ from cte_priority_category
 	group by
 	cte_priority_category.store_id,
 	cte_priority_category.visit_date_key,
-	cte_priority_category.owner_id,
 	cte_priority_category.count_category,
 	cte_priority_category.total_category,
 	cte_priority_category.target_category,
