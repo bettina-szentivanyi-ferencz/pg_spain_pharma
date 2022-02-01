@@ -75,6 +75,7 @@ from
 where
 	storechecks_kpi_fact.visit_id = storechecks_visit_fact_fiscal_year.visit_id
 	and split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 1) = perfect_shelf_weight.brand::text
+	and split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 2) = perfect_shelf_weight.segment::text
 	and storechecks_kpi_fact.display_group::text = perfect_shelf_weight.perfect_shelf_kpi::text
 	and storechecks_visit_fact_fiscal_year.fiscal_year_id::text = perfect_shelf_weight.fiscal_year_id::text
 	and storechecks_kpi_fact.kpi_group1::text <> ''::character varying::text
