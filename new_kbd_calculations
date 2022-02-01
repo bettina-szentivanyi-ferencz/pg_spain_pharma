@@ -25,7 +25,7 @@ where
 	and product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text
 	and product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text
 	and product_master.desc_j::text <> 'EXCLUDE'::character varying::text),
--- calculating sum of own and total facing on brand level per primary (Lineal) and secondary shelf (Segunda ubicación) from storechecks_planogram_fact
+-- calculating sum of own and total facing on brand level per primary (Lineal) and total shelf from storechecks_planogram_fact excluding Otros photo_group_type
 cte_product_facing_fact
 -- old a
 as
