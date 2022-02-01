@@ -79,7 +79,6 @@ where
 	and storechecks_kpi_fact.display_group::text = perfect_shelf_weight.perfect_shelf_kpi::text
 	and storechecks_visit_fact_fiscal_year.fiscal_year_id::text = perfect_shelf_weight.fiscal_year_id::text
 	and storechecks_kpi_fact.kpi_group1::text <> ''::character varying::text
-	and storechecks_kpi_fact.display_group::text !~~ '%Share of%'::character varying::text
 	and split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 2) <> ''::character varying::text
 	and storechecks_visit_fact_fiscal_year.quarter_rank = 1
 	and storechecks_visit_fact_fiscal_year.daily_rank = 1
