@@ -317,13 +317,13 @@ select
 	visibility_score_weight.pv_weight,
 	visibility_score_weight.pv_target,
 	perfect_shelf_rules_weighted_compliance.fa_compliance,
-	visibility_points_compliance.oc_compliance,
+	perfect_shelf_rules_weighted_compliance.oc_compliance,
 	perfect_shelf_rules_weighted_compliance.bc_compliance,	
-	visibility_points_compliance.tzone_compliance,
+	perfect_shelf_rules_weighted_compliance.tzone_compliance,
 	case
-        	when (visibility_points_compliance.oc_compliance is null 
-        		and visibility_points_compliance.tzone_compliance is null) then null::smallint
-        	else visibility_points_compliance.sp_compliance
+            when perfect_shelf_rules_weighted_compliance.sp_compliance = 0 then 0      	
+            when perfect_shelf_rules_weighted_compliance.sp_compliance > 0 then 1 
+        		else null::smallint
         end as sp_compliance, 
 	visibility_score_weight.sp_weight,
 	visibility_score_weight.sp_target,
@@ -331,11 +331,11 @@ select
 	visibility_score_weight.tf_weight,
 	visibility_score_weight.tf_target,
     case
-        	when (visibility_points_compliance.oc_compliance is null 
+        	when (perfect_shelf_rules_weighted_compliance.oc_compliance is null 
         		and perfect_shelf_rules_weighted_compliance.fa_compliance is null
-        		and visibility_points_compliance.tzone_compliance is null
+        		and perfect_shelf_rules_weighted_compliance.tzone_compliance is null
         		and perfect_shelf_rules_weighted_compliance.bc_compliance is null) then null::smallint
-        	else sum(coalesce(perfect_shelf_rules_weighted_compliance.bc_compliance,0) + coalesce(visibility_points_compliance.oc_compliance,0) + coalesce(visibility_points_compliance.tzone_compliance,0)+ coalesce(perfect_shelf_rules_weighted_compliance.fa_compliance,0))
+        	else sum(coalesce(perfect_shelf_rules_weighted_compliance.bc_compliance,0) + coalesce(perfect_shelf_rules_weighted_compliance.oc_compliance,0) + coalesce(perfect_shelf_rules_weighted_compliance.tzone_compliance,0)+ coalesce(perfect_shelf_rules_weighted_compliance.fa_compliance,0))
         end as mv_points
        
 from
@@ -361,9 +361,6 @@ left join cte_product_count on
 	and cte_visit_product_dim.seg1::text = cte_product_count.seg1::text
 	and cte_visit_product_dim.brand::text = cte_product_count.brand::text
 join procter_and_gamble_es_pharma.store_master store_master on  cte_visit_product_dim.store_id = store_master.store_id
-left join procter_and_gamble_es_pharma.visibility_points_compliance visibility_points_compliance on cte_visit_product_dim.visit_id = visibility_points_compliance.visit_id 
-	and cte_visit_product_dim.seg1::text = visibility_points_compliance.segment::text 
-	and cte_visit_product_dim.brand::text = visibility_points_compliance.brand::text
 left join cte_t_and_f_compliance on cte_visit_product_dim.visit_id = cte_t_and_f_compliance.visit_id
 and cte_visit_product_dim.brand::text = cte_t_and_f_compliance.brand::text  
 and cte_visit_product_dim.seg1::text = cte_t_and_f_compliance.segment::text 
@@ -403,9 +400,9 @@ group by
 	visibility_score_weight.pv_weight,
 	visibility_score_weight.pv_target,
 	perfect_shelf_rules_weighted_compliance.fa_compliance,
-	visibility_points_compliance.oc_compliance,
+	perfect_shelf_rules_weighted_compliance.oc_compliance,
 	perfect_shelf_rules_weighted_compliance.bc_compliance,	
-	visibility_points_compliance.tzone_compliance,
+	perfect_shelf_rules_weighted_compliance.tzone_compliance,
 	sp_compliance,
 	visibility_score_weight.sp_weight,
 	visibility_score_weight.sp_target,
