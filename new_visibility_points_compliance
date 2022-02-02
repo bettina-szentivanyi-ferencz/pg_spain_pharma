@@ -1,3 +1,4 @@
+
 DROP VIEW IF EXISTS procter_and_gamble_es_pharma.visibility_points_compliance CASCADE;
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.visibility_points_compliance as
 -- calculating visibility points from storechecks_planogram_fact
@@ -70,25 +71,7 @@ group by
             WHEN cte_visibility_points.seg1 not in ('POC','Toothpastes','Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN null::smallint
             ELSE 0
         END AS tzone_compliance,
-        case
-        	when (oc_compliance = 1 
-        		or tzone_compliance = 1) then 1
-        	else 0
-        end as sp_compliance,  
-        case
-        	when sum(perfect_shelf_rules_compliance.fa_compliance) is null then null::smallint
-        	when sum(perfect_shelf_rules_compliance.fa_compliance) = 1 then 1
-        	else 0
-        end as fa_compliance, 
-        case
-        	when sum(perfect_shelf_rules_compliance.bc_compliance) is null then null::smallint
-        	when sum(perfect_shelf_rules_compliance.bc_compliance) = 1 then 1
-        	else 0
-        end as bc_compliance 
    from cte_visibility_points
-   left join procter_and_gamble_es_pharma.perfect_shelf_rules_compliance perfect_shelf_rules_compliance on cte_visibility_points.visit_id=perfect_shelf_rules_compliance.visit_id
-   and cte_visibility_points.seg1::text =perfect_shelf_rules_compliance.segment::text 
-   and cte_visibility_points.brand::text =perfect_shelf_rules_compliance.brand::text 
    where cte_visibility_points.seg1 in ('POC','Toothpastes','Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics','Pregnancy','Diagnostics')
    group by
   cte_visibility_points.visit_id, 
@@ -99,14 +82,11 @@ group by
 	cte_visibility_points.seg1, 
 	cte_visibility_points.brand,
 	oc_compliance,
-	tzone_compliance,
- 	sp_compliance,
- 	fa_compliance,
- 	bc_compliance;
+	tzone_compliance;
 	
 GRANT SELECT ON procter_and_gamble_es_pharma.visibility_points_compliance  TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.visibility_points_compliance  TO plano_auto_export;
 GRANT SELECT ON procter_and_gamble_es_pharma.visibility_points_compliance  TO pg_es_pharma;
 
 
-COMMIT
+COMMIT;
