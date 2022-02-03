@@ -18,7 +18,7 @@ as
 					procter_and_gamble_es_pharma.storechecks_visit_fact storechecks_visit_fact
 				where
 					storechecks_kpi_fact.visit_id = storechecks_visit_fact.visit_id
-					and storechecks_visit_fact. visit_date_key  >='2022-01-01'
+					and storechecks_visit_fact.visit_date_key  >='2022-01-01'
 					and kpi_group1::text <>''
 					and photo_group_type::text <>''
 					),
