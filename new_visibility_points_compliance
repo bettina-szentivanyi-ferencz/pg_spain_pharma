@@ -70,7 +70,7 @@ group by
             and cte_visibility_points.seg1 in ('POC','Toothpastes','Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN 1
             WHEN cte_visibility_points.seg1 not in ('POC','Toothpastes','Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN null::smallint
             ELSE 0
-        END AS tzone_compliance,
+        END AS tzone_compliance
    from cte_visibility_points
    where cte_visibility_points.seg1 in ('POC','Toothpastes','Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics','Pregnancy','Diagnostics')
    group by
