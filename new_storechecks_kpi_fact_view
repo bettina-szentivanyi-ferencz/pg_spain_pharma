@@ -96,7 +96,7 @@ select
    				'missing_optional' as kpi_group2,
    				1000000 as photo_group,
    				'missing_optional' as product_id				
-from cte_missing_rules_table
+from cte_missing_rules_table;
 
 GRANT SELECT ON procter_and_gamble_es_pharma.storechecks_kpi_fact_view TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.storechecks_kpi_fact_view TO plano_auto_export;
