@@ -225,8 +225,16 @@ select
 			else null::smallint
 		end as sp_compliance,
 	cte_perfect_shelf_compliance_weighted_with_visibility_points.compliance,
-	cte_perfect_shelf_compliance_weighted_with_visibility_points.fa_compliance,
-	cte_perfect_shelf_compliance_weighted_with_visibility_points.bc_compliance
+	case 
+	when cte_perfect_shelf_compliance_weighted_with_visibility_points.fa_compliance = 0 then 0
+	when cte_perfect_shelf_compliance_weighted_with_visibility_points.fa_compliance > 0 then 1
+	else null::smallint
+	end as fa_compliance,
+		case 
+	when cte_perfect_shelf_compliance_weighted_with_visibility_points.bc_compliance = 0 then 0
+	when cte_perfect_shelf_compliance_weighted_with_visibility_points.bc_compliance > 0 then 1
+	else null::smallint
+	end as bc_compliance
 from cte_perfect_shelf_compliance_weighted_with_visibility_points
 group by
 	cte_perfect_shelf_compliance_weighted_with_visibility_points.visit_id,
@@ -239,8 +247,8 @@ group by
 	cte_perfect_shelf_compliance_weighted_with_visibility_points.tzone_compliance,
 	cte_perfect_shelf_compliance_weighted_with_visibility_points.oc_compliance,
 	cte_perfect_shelf_compliance_weighted_with_visibility_points.compliance,
-	cte_perfect_shelf_compliance_weighted_with_visibility_points.fa_compliance,
-	cte_perfect_shelf_compliance_weighted_with_visibility_points.bc_compliance;
+	fa_compliance,
+	bc_compliance;
 	
 GRANT SELECT ON procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance  TO plano_auto_export;
