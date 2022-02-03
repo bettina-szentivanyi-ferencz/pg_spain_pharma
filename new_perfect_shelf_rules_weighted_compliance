@@ -6,28 +6,28 @@ cte_perfect_shelf_compliance_with_modification
 as
 (
 select
-	storechecks_kpi_fact.visit_id,
+	storechecks_kpi_fact_view.visit_id,
 	storechecks_visit_fact_fiscal_year.visit_date_key,
 	storechecks_visit_fact_fiscal_year.fiscal_year_id,
 	storechecks_visit_fact_fiscal_year.store_id,
 	storechecks_visit_fact_fiscal_year.owner_id,
 	storechecks_visit_fact_fiscal_year.categ_name,
     case
-      when (ROUND((LENGTH(storechecks_kpi_fact.display_group) - LENGTH(REPLACE(storechecks_kpi_fact.display_group, ' - ', ''))) / LENGTH(' - ')) = 2)
-        then SUBSTRING(storechecks_kpi_fact.display_group,0,(LENGTH(storechecks_kpi_fact.display_group) - POSITION(' - ' IN REVERSE(storechecks_kpi_fact.display_group))))
-        else storechecks_kpi_fact.display_group
+      when (ROUND((LENGTH(storechecks_kpi_fact_view.display_group) - LENGTH(REPLACE(storechecks_kpi_fact_view.display_group, ' - ', ''))) / LENGTH(' - ')) = 2)
+        then SUBSTRING(storechecks_kpi_fact_view.display_group,0,(LENGTH(storechecks_kpi_fact_view.display_group) - POSITION(' - ' IN REVERSE(storechecks_kpi_fact_view.display_group))))
+        else storechecks_kpi_fact_view.display_group
     end as display_group,
-	split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 1)::character varying as brand,
-	split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 2)::character varying as segment,
+	split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 1)::character varying as brand,
+	split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 2)::character varying as segment,
 	case
 		when (count(
             case
-                when storechecks_kpi_fact.compliant = true then 1
+                when storechecks_kpi_fact_view.compliant = true then 1
                 else null::integer
             end)::numeric::numeric(18,
 		0) * 1.0 / count(
             case
-                when storechecks_kpi_fact.compliant = false or storechecks_kpi_fact.compliant = true or storechecks_kpi_fact.compliant is null then 1
+                when storechecks_kpi_fact_view.compliant = false or storechecks_kpi_fact_view.compliant = true or storechecks_kpi_fact_view.compliant is null then 1
                 else null::integer
             end)::numeric::numeric(18,
 		0) * 1.0) > 0::numeric::numeric(18,
@@ -37,16 +37,16 @@ select
 	case
 		when (count(
             case
-                when (storechecks_kpi_fact.compliant = true 
-                and ((storechecks_kpi_fact.photo_group_type::text = 'Lineal'::character varying::text  
-                   			or storechecks_kpi_fact.photo_group_type::text = 'Lineal libre acceso'::character varying::text 
-                   			or storechecks_kpi_fact.photo_group_type=''::text)))
+                when (storechecks_kpi_fact_view.compliant = true 
+                and ((storechecks_kpi_fact_view.photo_group_type::text = 'Lineal'::character varying::text  
+                   			or storechecks_kpi_fact_view.photo_group_type::text = 'Lineal libre acceso'::character varying::text 
+                   			or storechecks_kpi_fact_view.photo_group_type=''::text)))
                 then 1
                 else null::integer
             end)::numeric::numeric(18,
 		0) * 1.0 / count(
             case
-                when storechecks_kpi_fact.compliant = false or storechecks_kpi_fact.compliant = true or storechecks_kpi_fact.compliant is null then 1
+                when storechecks_kpi_fact_view.compliant = false or storechecks_kpi_fact_view.compliant = true or storechecks_kpi_fact_view.compliant is null then 1
                 else null::integer
             end)::numeric::numeric(18,
 		0) * 1.0) > 0::numeric::numeric(18,
@@ -56,14 +56,14 @@ select
 		case
 		when (count(
             case
-            	when (storechecks_kpi_fact.compliant = true
-                and storechecks_kpi_fact.photo_group_type::text = 'Lineal detrás del mostrador'::character varying::text)
+            	when (storechecks_kpi_fact_view.compliant = true
+                and storechecks_kpi_fact_view.photo_group_type::text = 'Lineal detrás del mostrador'::character varying::text)
                 then 1
                 else null::integer
             end)::numeric::numeric(18,
 		0) * 1.0 / count(
             case
-                when storechecks_kpi_fact.compliant = false or storechecks_kpi_fact.compliant = true or storechecks_kpi_fact.compliant is null then 1
+                when storechecks_kpi_fact_view.compliant = false or storechecks_kpi_fact_view.compliant = true or storechecks_kpi_fact_view.compliant is null then 1
                 else null::integer
             end)::numeric::numeric(18,
 		0) * 1.0) > 0::numeric::numeric(18,
@@ -71,24 +71,24 @@ select
 		else 0
 	end as bc_compliance
 from
-	procter_and_gamble_es_pharma.storechecks_kpi_fact storechecks_kpi_fact,
+	procter_and_gamble_es_pharma.storechecks_kpi_fact_view storechecks_kpi_fact_view,
 	procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year
 where
-	storechecks_kpi_fact.visit_id = storechecks_visit_fact_fiscal_year.visit_id
-	and storechecks_kpi_fact.kpi_group1::text <> ''::character varying::text
-	and split_part(storechecks_kpi_fact.kpi_group1::text, ' - '::character varying::text, 2) <> ''::character varying::text
+	storechecks_kpi_fact_view.visit_id = storechecks_visit_fact_fiscal_year.visit_id
+	and storechecks_kpi_fact_view.kpi_group1::text <> ''::character varying::text
+	and split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 2) <> ''::character varying::text
 	and storechecks_visit_fact_fiscal_year.quarter_rank = 1
 	and storechecks_visit_fact_fiscal_year.daily_rank = 1
-	and (storechecks_kpi_fact.kpi_group1::text || storechecks_kpi_fact.display_group::text) <> 'Oral B - POCOral B - Permanent Display'::character varying::text
+	and (storechecks_kpi_fact_view.kpi_group1::text || storechecks_kpi_fact_view.display_group::text) <> 'Oral B - POCOral B - Permanent Display'::character varying::text
 group by
-	storechecks_kpi_fact.visit_id,
+	storechecks_kpi_fact_view.visit_id,
 	storechecks_visit_fact_fiscal_year.visit_date_key,
 	storechecks_visit_fact_fiscal_year.fiscal_year_id,
 	storechecks_visit_fact_fiscal_year.store_id,
 	storechecks_visit_fact_fiscal_year.owner_id,
 	storechecks_visit_fact_fiscal_year.categ_name,
 	display_group,
-	storechecks_kpi_fact.kpi_group1),
+	storechecks_kpi_fact_view.kpi_group1),
 
 -- calculating compliance per perfect shelf rule
 -- why quester and daily rank = 1?
@@ -176,7 +176,7 @@ select
 			else null::smallint
 		end as fa_compliance,
 	case
-	   WHEN cte_perfect_shelf_compliance_weighted.segment in ('MSR','Nasal Deco','Rubs','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN 
+	   WHEN cte_perfect_shelf_compliance_weighted.segment in ('MSR','Nasal Deco','Rubs','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics','Pregnancy') THEN 
 	   sum(cte_perfect_shelf_compliance_weighted.bc_compliance::double precision) * 1.0::double precision 
 	   else null::smallint
 	end as bc_compliance
