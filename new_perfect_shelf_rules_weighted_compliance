@@ -77,8 +77,6 @@ where
 	storechecks_kpi_fact_view.visit_id = storechecks_visit_fact_fiscal_year.visit_id
 	and storechecks_kpi_fact_view.kpi_group1::text <> ''::character varying::text
 	and split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 2) <> ''::character varying::text
-	and storechecks_visit_fact_fiscal_year.quarter_rank = 1
-	and storechecks_visit_fact_fiscal_year.daily_rank = 1
 	and (storechecks_kpi_fact_view.kpi_group1::text || storechecks_kpi_fact_view.display_group::text) <> 'Oral B - POCOral B - Permanent Display'::character varying::text
 group by
 	storechecks_kpi_fact_view.visit_id,
