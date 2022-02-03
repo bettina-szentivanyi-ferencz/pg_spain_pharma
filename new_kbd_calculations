@@ -104,7 +104,7 @@ group by
 	storechecks_planogram_fact.visit_id,
 	product_master.seg1),
 -- calculating count of present and oos product on brand level based on all_top_sku (legacy kpi setup until '2021-10-01') and product_group (current kpi setup) 
---from storechecks_product_fact(legacy) and storechecks_kpi_fact(current)
+--from storechecks_product_fact(legacy) and storechecks_kpi_fact_view(current)
 cte_product_count
 -- old e
 as
@@ -154,27 +154,27 @@ select
 from
 	(
 	select
-		storechecks_kpi_fact.visit_id,
-		storechecks_kpi_fact.display_group,
-		storechecks_kpi_fact.product_group_name,
-		"max"(storechecks_kpi_fact.product_id::text) as product_id,
+		storechecks_kpi_fact_view.visit_id,
+		storechecks_kpi_fact_view.display_group,
+		storechecks_kpi_fact_view.product_group_name,
+		"max"(storechecks_kpi_fact_view.product_id::text) as product_id,
 		"max"(
 		case
-			when storechecks_kpi_fact.compliant = true then 1
+			when storechecks_kpi_fact_view.compliant = true then 1
 			else 0
 		end) as compliant
 	from
-		procter_and_gamble_es_pharma.storechecks_kpi_fact storechecks_kpi_fact
+		procter_and_gamble_es_pharma.storechecks_kpi_fact_view storechecks_kpi_fact_view
 	join procter_and_gamble_es_pharma.storechecks_visit_fact storechecks_visit_fact on
-		storechecks_kpi_fact.visit_id = storechecks_visit_fact.visit_id
+		storechecks_kpi_fact_view.visit_id = storechecks_visit_fact.visit_id
 	where
 		storechecks_visit_fact.visit_date_key >= '2021-10-01'::bpchar
-		and storechecks_kpi_fact.display_group::text ~~ '%Visible p-sku distribution%'::text
-		and storechecks_kpi_fact.product_id::text <> ''::text
+		and storechecks_kpi_fact_view.display_group::text ~~ '%Visible p-sku distribution%'::text
+		and storechecks_kpi_fact_view.product_id::text <> ''::text
 	group by
-		storechecks_kpi_fact.visit_id,
-		storechecks_kpi_fact.display_group,
-		storechecks_kpi_fact.product_group_name) prod_groups
+		storechecks_kpi_fact_view.visit_id,
+		storechecks_kpi_fact_view.display_group,
+		storechecks_kpi_fact_view.product_group_name) prod_groups
 join procter_and_gamble_es_pharma.product_master product_master on
 	prod_groups.product_id = product_master.product_id::text
 group by
