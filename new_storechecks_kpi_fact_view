@@ -1,3 +1,5 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.storechecks_kpi_fact_view CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.storechecks_kpi_fact_view  AS
 with recursive
 -- filtering visit data from storechecks_visit_fact_fiscal_year and product data from product_master
 cte_display_group_kpi_group_from_kpi_fact
@@ -95,3 +97,10 @@ select
    				1000000 as photo_group,
    				'missing_optional' as product_id				
 from cte_missing_rules_table
+
+GRANT SELECT ON procter_and_gamble_es_pharma.storechecks_kpi_fact_view TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.storechecks_kpi_fact_view TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.storechecks_kpi_fact_view TO pg_es_pharma;
+
+
+COMMIT;
