@@ -106,15 +106,15 @@ select
 	Max(cte_perfect_shelf_compliance_with_modification.compliance) as compliance,
 	Max(cte_perfect_shelf_compliance_with_modification.fa_compliance) as fa_compliance,
 	Max(cte_perfect_shelf_compliance_with_modification.bc_compliance) as bc_compliance,
-	perfect_shelf_weight.weight
+	perfect_shelf_weight_2020_removed.weight
 from
 	cte_perfect_shelf_compliance_with_modification,
-	procter_and_gamble_es_pharma.perfect_shelf_weight perfect_shelf_weight
+	procter_and_gamble_es_pharma.perfect_shelf_weight_2020_removed perfect_shelf_weight_2020_removed
 where
-	 cte_perfect_shelf_compliance_with_modification.brand::text = perfect_shelf_weight.brand::text
-	and cte_perfect_shelf_compliance_with_modification.segment::text = perfect_shelf_weight.segment::text
-	and cte_perfect_shelf_compliance_with_modification.display_group::text = perfect_shelf_weight.perfect_shelf_kpi::text
-	and cte_perfect_shelf_compliance_with_modification.fiscal_year_id::text = perfect_shelf_weight.fiscal_year_id::text
+	 cte_perfect_shelf_compliance_with_modification.brand::text = perfect_shelf_weight_2020_removed.brand::text
+	and cte_perfect_shelf_compliance_with_modification.segment::text = perfect_shelf_weight_2020_removed.segment::text
+	and cte_perfect_shelf_compliance_with_modification.display_group::text = perfect_shelf_weight_2020_removed.perfect_shelf_kpi::text
+	and cte_perfect_shelf_compliance_with_modification.fiscal_year_id::text = perfect_shelf_weight_2020_removed.fiscal_year_id::text
 group by
 	cte_perfect_shelf_compliance_with_modification.visit_id,
 	cte_perfect_shelf_compliance_with_modification.visit_date_key,
@@ -124,7 +124,7 @@ group by
 	cte_perfect_shelf_compliance_with_modification.display_group,
 	cte_perfect_shelf_compliance_with_modification.brand,
 	cte_perfect_shelf_compliance_with_modification.segment,
-	perfect_shelf_weight.weight)
+	perfect_shelf_weight_2020_removed.weight)
 select
 	cte_perfect_shelf_compliance.visit_id,
 	cte_perfect_shelf_compliance.visit_date_key,
