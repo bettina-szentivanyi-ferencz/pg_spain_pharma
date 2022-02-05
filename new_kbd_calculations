@@ -298,7 +298,9 @@ select
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
 	cte_visit_product_dim.brand_sales_id,
-	cte_category_compliance.category_compliance,
+	case when 	cte_category_compliance.category_compliance is null then 0::integer
+	else cte_category_compliance.category_compliance
+	end as category_compliance,
 	store_compliance.store_compliance as perfect_report_compliance,
 	store_compliance.count_category as count_primary_category,
 	store_compliance.target_category as target_primary_category,
@@ -381,7 +383,7 @@ group by
 	cte_visit_product_dim.seg1,
 	cte_visit_product_dim.brand,
 	cte_visit_product_dim.brand_sales_id,
-	cte_category_compliance.category_compliance,
+	category_compliance,
 	store_compliance.store_compliance, 
 	store_compliance.count_category,
 	store_compliance.target_category,
