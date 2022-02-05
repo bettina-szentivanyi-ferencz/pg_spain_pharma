@@ -25,7 +25,7 @@ where
 	and product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text
 	and product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text
 	and product_master.desc_j::text <> 'EXCLUDE'::character varying::text),
--- calculating sum of own and total facing on brand level per primary (Lineal) and secondary shelf (Segunda ubicación) from storechecks_planogram_fact
+-- calculating sum of own and total facing on brand level per primary (Lineal) and total shelf from storechecks_planogram_fact excluding Otros photo_group_type
 cte_product_facing_fact
 -- old a
 as
@@ -74,6 +74,28 @@ group by
 	product_master.seg1,
 	product_master.brand),
 -- calculating sum of own and total facing on segment level per primary (Lineal) shelf and secondary(Segunda ubicación) from storechecks_planogram_fact
+cte_product_facing_fact_2
+-- old a
+as
+ (
+select 
+	cte_visit_product_dim.store_id,
+	cte_visit_product_dim.visit_id,
+	cte_visit_product_dim.visit_date_key,
+	cte_visit_product_dim.categ_name,
+	cte_visit_product_dim.seg1,
+	cte_visit_product_dim.brand,
+	cte_product_facing_fact.own_primary_shelf_facing,
+	cte_product_facing_fact.own_total_shelf_facing,
+	cte_product_facing_fact.brand_primary_shelf_facing,
+	cte_product_facing_fact.brand_total_shelf_facing
+from
+	cte_visit_product_dim
+left join cte_product_facing_fact on
+	cte_visit_product_dim.visit_id = cte_product_facing_fact.visit_id
+	and cte_visit_product_dim.seg1::text = cte_product_facing_fact.seg1::text
+	and cte_visit_product_dim.brand::text = cte_product_facing_fact.brand::text),
+-- calculating sum of own and total facing on segment level per primary (Lineal) shelf and secondary(Segunda ubicación) from storechecks_planogram_fact
 cte_count_own_brand_per_category
 -- old z
 as
@@ -84,10 +106,10 @@ select
 	cte_visit_product_dim.categ_name,
 	cte_visit_product_dim.owner_id,
 	count(distinct
-	case when cte_product_facing_fact.own_primary_shelf_facing is not null then  cte_visit_product_dim.brand end) as count_own_brand
+	case when cte_product_facing_fact_2.own_primary_shelf_facing is not null then  cte_visit_product_dim.brand end) as count_own_brand
 from
-	cte_visit_product_dim, cte_product_facing_fact
-	where cte_visit_product_dim.visit_id=cte_product_facing_fact.visit_id
+	cte_visit_product_dim, cte_product_facing_fact_2
+	where cte_visit_product_dim.visit_id=cte_product_facing_fact_2.visit_id
 group by
 	cte_visit_product_dim.store_id,
 	cte_visit_product_dim.visit_date_key,
