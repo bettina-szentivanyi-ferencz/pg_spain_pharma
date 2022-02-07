@@ -1,0 +1,232 @@
+create or replace
+view procter_and_gamble_es_pharma.new_best_visits
+as
+select
+	kbd_base.store_id,
+	kbd_base.quarter,
+	kbd_base."month",
+	kbd_base.visit_id,
+	kbd_base.seg1,
+	kbd_base.brand,
+	(kbd_base.visit_id::text || kbd_base.seg1::text) || kbd_base.brand::text as uid,
+	kbd_base.visit_date_key,
+	case
+		when kbd_base.kbd_index_no_pv is null then 0::double precision
+		else kbd_base.kbd_index_no_pv
+	end as kbd_index_no_pv_new,
+	case
+		when kbd_base.pv_index is null then 0::double precision
+		else kbd_base.pv_index
+	end as pv_index_new,
+	case
+		when kbd_base.kbd_index_no_pv is null then 0::double precision
+		else kbd_base.kbd_index_no_pv
+	end +
+	case
+		when kbd_base.pv_index is null then 0::double precision
+		else kbd_base.pv_index
+	end as kbd_index,
+	(pg_catalog.rank()
+  over( 
+  partition by kbd_base.store_id,
+	kbd_base."month",
+	kbd_base.seg1,
+	kbd_base.brand
+order by
+	case
+		when kbd_base.kbd_index_no_pv is null then 0::double precision
+		else kbd_base.kbd_index_no_pv
+	end +
+	case
+		when kbd_base.pv_index is null then 0::double precision
+		else kbd_base.pv_index
+	end desc)) + (pg_catalog.row_number()
+  over( 
+  partition by kbd_base.store_id,
+	kbd_base."month",
+	kbd_base.seg1,
+	kbd_base.brand
+order by
+	case
+		when kbd_base.kbd_index_no_pv is null then 0::double precision
+		else kbd_base.kbd_index_no_pv
+	end +
+	case
+		when kbd_base.pv_index is null then 0::double precision
+		else kbd_base.pv_index
+	end desc)) as best_in_month_num,
+	case
+		when ((pg_catalog.rank()
+      over( 
+      partition by kbd_base.store_id,
+		kbd_base."month",
+		kbd_base.seg1,
+		kbd_base.brand
+	order by
+		case
+			when kbd_base.kbd_index_no_pv is null then 0::double precision
+			else kbd_base.kbd_index_no_pv
+		end +
+		case
+			when kbd_base.pv_index is null then 0::double precision
+			else kbd_base.pv_index
+		end desc)) + (pg_catalog.row_number()
+      over( 
+      partition by kbd_base.store_id,
+		kbd_base."month",
+		kbd_base.seg1,
+		kbd_base.brand
+	order by
+		case
+			when kbd_base.kbd_index_no_pv is null then 0::double precision
+			else kbd_base.kbd_index_no_pv
+		end +
+		case
+			when kbd_base.pv_index is null then 0::double precision
+			else kbd_base.pv_index
+		end desc))) = 2 then 'YES'::text
+		else 'NO'::text
+	end as best_in_month,
+	(pg_catalog.rank()
+  over( 
+  partition by kbd_base.store_id,
+	kbd_base.quarter,
+	kbd_base.seg1,
+	kbd_base.brand
+order by
+	case
+		when kbd_base.kbd_index_no_pv is null then 0::double precision
+		else kbd_base.kbd_index_no_pv
+	end +
+	case
+		when kbd_base.pv_index is null then 0::double precision
+		else kbd_base.pv_index
+	end desc)) + (pg_catalog.row_number()
+  over( 
+  partition by kbd_base.store_id,
+	kbd_base.quarter,
+	kbd_base.seg1,
+	kbd_base.brand
+order by
+	case
+		when kbd_base.kbd_index_no_pv is null then 0::double precision
+		else kbd_base.kbd_index_no_pv
+	end +
+	case
+		when kbd_base.pv_index is null then 0::double precision
+		else kbd_base.pv_index
+	end desc)) as best_in_quarter_num,
+	case
+		when ((pg_catalog.rank()
+      over( 
+      partition by kbd_base.store_id,
+		kbd_base.quarter,
+		kbd_base.seg1,
+		kbd_base.brand
+	order by
+		case
+			when kbd_base.kbd_index_no_pv is null then 0::double precision
+			else kbd_base.kbd_index_no_pv
+		end +
+		case
+			when kbd_base.pv_index is null then 0::double precision
+			else kbd_base.pv_index
+		end desc)) + (pg_catalog.row_number()
+      over( 
+      partition by kbd_base.store_id,
+		kbd_base.quarter,
+		kbd_base.seg1,
+		kbd_base.brand
+	order by
+		case
+			when kbd_base.kbd_index_no_pv is null then 0::double precision
+			else kbd_base.kbd_index_no_pv
+		end +
+		case
+			when kbd_base.pv_index is null then 0::double precision
+			else kbd_base.pv_index
+		end desc))) = 2 then 'YES'::text
+		else 'NO'::text
+	end as best_in_quarter,
+	(pg_catalog.rank()
+  over( 
+  partition by kbd_base.store_id,
+	kbd_base."year",
+	kbd_base.seg1,
+	kbd_base.brand
+order by
+	case
+		when kbd_base.kbd_index_no_pv is null then 0::double precision
+		else kbd_base.kbd_index_no_pv
+	end +
+	case
+		when kbd_base.pv_index is null then 0::double precision
+		else kbd_base.pv_index
+	end desc)) + (pg_catalog.row_number()
+  over( 
+  partition by kbd_base.store_id,
+	kbd_base."year",
+	kbd_base.seg1,
+	kbd_base.brand
+order by
+	case
+		when kbd_base.kbd_index_no_pv is null then 0::double precision
+		else kbd_base.kbd_index_no_pv
+	end +
+	case
+		when kbd_base.pv_index is null then 0::double precision
+		else kbd_base.pv_index
+	end desc)) as best_in_year_num,
+	case
+		when ((pg_catalog.rank()
+      over( 
+      partition by kbd_base.store_id,
+		kbd_base."year",
+		kbd_base.seg1,
+		kbd_base.brand
+	order by
+		case
+			when kbd_base.kbd_index_no_pv is null then 0::double precision
+			else kbd_base.kbd_index_no_pv
+		end +
+		case
+			when kbd_base.pv_index is null then 0::double precision
+			else kbd_base.pv_index
+		end desc)) + (pg_catalog.row_number()
+      over( 
+      partition by kbd_base.store_id,
+		kbd_base."year",
+		kbd_base.seg1,
+		kbd_base.brand
+	order by
+		case
+			when kbd_base.kbd_index_no_pv is null then 0::double precision
+			else kbd_base.kbd_index_no_pv
+		end +
+		case
+			when kbd_base.pv_index is null then 0::double precision
+			else kbd_base.pv_index
+		end desc))) = 2 then 'YES'::text
+		else 'NO'::text
+	end as best_in_year
+from
+	(
+	select
+		kbd_calculations.store_id,
+		pgdate_part('mon'::text,
+		date(kbd_calculations.visit_date_key)::timestamp without time zone) as "month",
+		pgdate_part('qtr'::text,
+		date(kbd_calculations.visit_date_key)::timestamp without time zone) as quarter,
+		pgdate_part('y'::text,
+		date(kbd_calculations.visit_date_key)::timestamp without time zone) as "year",
+		kbd_calculations.visit_date_key,
+		kbd_calculations.visit_id,
+		kbd_calculations.seg1,
+		kbd_calculations.brand,
+		(kbd_calculations.compliance * kbd_calculations.pv_weight as pv_index,
+		(kbd_calculations.present_count::numeric * 1.0 / (kbd_calculations.present_count + kbd_calculations.oos_count)::numeric * 1.0)::double precision * kbd_calculations.psku_weight as psku_index,
+		kbd_calculations.sp_compliance::double precision * kbd_calculations.sp_weight as oc_index,
+		kbd_calculations.tf_compliance::double precision * kbd_calculations.tf_weight as bc_index,
+		(kbd_calculations.present_count::numeric * 1.0 / (kbd_calculations.present_count + kbd_calculations.oos_count)::numeric * 1.0)::double precision * kbd_calculations.psku_weight + kbd_calculations.oc_compliance::double precision * kbd_calculations.oc_weight + kbd_calculations.bc_compliance::double precision * kbd_calculations.bc_weight as kbd_index_no_pv
+	from
+		procter_and_gamble_es_pharma.kbd_calculations) kbd_base;
