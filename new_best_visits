@@ -1,7 +1,6 @@
 DROP VIEW IF EXISTS procter_and_gamble_es_pharma.best_visits_2022 CASCADE;
-CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.best_visits_2022 AS
-as
-select
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.best_visits_2022
+AS SELECT
 	kbd_base.store_id,
 	kbd_base.quarter,
 	kbd_base."month",
@@ -223,11 +222,11 @@ from
 		kbd_calculations.visit_id,
 		kbd_calculations.seg1,
 		kbd_calculations.brand,
-		(kbd_calculations.compliance * kbd_calculations.pv_weight as pv_index,
+		(kbd_calculations.compliance * kbd_calculations.pv_weight) as pv_index,
 		(kbd_calculations.present_count::numeric * 1.0 / (kbd_calculations.present_count + kbd_calculations.oos_count)::numeric * 1.0)::double precision * kbd_calculations.psku_weight as psku_index,
 		kbd_calculations.sp_compliance::double precision * kbd_calculations.sp_weight as oc_index,
 		kbd_calculations.tf_compliance::double precision * kbd_calculations.tf_weight as bc_index,
-		(kbd_calculations.present_count::numeric * 1.0 / (kbd_calculations.present_count + kbd_calculations.oos_count)::numeric * 1.0)::double precision * kbd_calculations.psku_weight + kbd_calculations.oc_compliance::double precision * kbd_calculations.oc_weight + kbd_calculations.bc_compliance::double precision * kbd_calculations.bc_weight as kbd_index_no_pv
+		(kbd_calculations.present_count::numeric * 1.0 / (kbd_calculations.present_count + kbd_calculations.oos_count)::numeric * 1.0)::double precision * kbd_calculations.psku_weight + kbd_calculations.sp_compliance::double precision * kbd_calculations.sp_weight + kbd_calculations.tf_compliance::double precision * kbd_calculations.tf_weight as kbd_index_no_pv
 	from
 		procter_and_gamble_es_pharma.kbd_calculations) kbd_base;
 		
