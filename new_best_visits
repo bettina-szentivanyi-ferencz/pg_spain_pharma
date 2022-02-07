@@ -1,5 +1,5 @@
-create or replace
-view procter_and_gamble_es_pharma.new_best_visits
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.best_visits_2022 CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.best_visits_2022 AS
 as
 select
 	kbd_base.store_id,
@@ -230,3 +230,11 @@ from
 		(kbd_calculations.present_count::numeric * 1.0 / (kbd_calculations.present_count + kbd_calculations.oos_count)::numeric * 1.0)::double precision * kbd_calculations.psku_weight + kbd_calculations.oc_compliance::double precision * kbd_calculations.oc_weight + kbd_calculations.bc_compliance::double precision * kbd_calculations.bc_weight as kbd_index_no_pv
 	from
 		procter_and_gamble_es_pharma.kbd_calculations) kbd_base;
+		
+	
+GRANT SELECT ON procter_and_gamble_es_pharma.best_visits_2022 TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.best_visits_2022 TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.best_visits_2022 TO pg_es_pharma;
+
+
+COMMIT;
