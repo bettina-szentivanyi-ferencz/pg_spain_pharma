@@ -262,7 +262,7 @@ SELECT
 	cte_t_and_f_presence.segment, 
 	cte_t_and_f_presence.brand, 
         CASE
-            WHEN cte_t_and_f_presence.touch_and_feel_point > 1 and cte_t_and_f_presence.brand='Oral B'::text   THEN 1
+            WHEN cte_t_and_f_presence.touch_and_feel_point >= 1 and cte_t_and_f_presence.brand='Oral B'::text   THEN 1
             when cte_t_and_f_presence.brand<>'Oral B'::text  THEN null::smallint
             ELSE 0
         END AS tf_compliance 
