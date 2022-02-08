@@ -37,10 +37,12 @@ select
 	case
 		when (count(
             case
-                when (storechecks_kpi_fact_view.compliant = true 
-                and ((storechecks_kpi_fact_view.photo_group_type::text = 'Lineal'::character varying::text  
-                   			or storechecks_kpi_fact_view.photo_group_type::text = 'Lineal libre acceso'::character varying::text 
-                   			or storechecks_kpi_fact_view.photo_group_type=''::text)))
+                when storechecks_kpi_fact_view.compliant = true 
+                and storechecks_kpi_fact_view.photo_group_type::text = 'Lineal libre acceso'::character varying::text                   		
+                then 1
+                when storechecks_kpi_fact_view.compliant = true 
+                and  ((storechecks_kpi_fact_view.photo_group_type::text = 'Lineal'::character varying::text or storechecks_kpi_fact_view.photo_group_type=''::text) 
+                and (brand::text <>'Ilvico' or brand::text <>'Vicks' ))
                 then 1
                 else null::integer
             end)::numeric::numeric(18,
@@ -56,8 +58,13 @@ select
 		case
 		when (count(
             case
-            	when (storechecks_kpi_fact_view.compliant = true
-                and storechecks_kpi_fact_view.photo_group_type::text = 'Lineal detrás del mostrador'::character varying::text)
+            	when storechecks_kpi_fact_view.compliant = true
+                and storechecks_kpi_fact_view.photo_group_type::text = 'Lineal detrás del mostrador'::character varying::text
+                then 1
+                when storechecks_kpi_fact_view.compliant = true
+                and ((storechecks_kpi_fact_view.photo_group_type::text = 'Lineal'::character varying::text 
+                or storechecks_kpi_fact_view.photo_group_type::text =''::text)
+                and (brand::text ='Ilvico' or brand::text ='Vicks' ))
                 then 1
                 else null::integer
             end)::numeric::numeric(18,
