@@ -103,6 +103,33 @@ where
 group by
 	storechecks_planogram_fact.visit_id,
 	product_master.seg1),
+cte_product_facing_fact_visit
+-- old d and f
+as
+ (
+select
+	storechecks_planogram_fact.visit_id,
+	sum(
+        case
+            when storechecks_planogram_fact.photo_group_type::text in ('Lineal'::character varying::text,'Lineal libre acceso'::character varying::text,'Lineal detrás del mostrador'::character varying::text) 
+            and product_master.desc_j::text = 'INCLUDE'::character varying::text 
+            then storechecks_planogram_fact.facings::double precision
+            else null::double precision
+        end) as total_primary_shelf_facing_visit,
+    sum(
+        case
+            when storechecks_planogram_fact.photo_group_type::text <> 'Otros'::character varying::text
+            and product_master.desc_j::text = 'INCLUDE'::character varying::text 
+            then storechecks_planogram_fact.facings::double precision
+            else null::double precision
+        end) as total_shelf_facing_visit
+from
+	procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact,
+	procter_and_gamble_es_pharma.product_master product_master
+where
+	storechecks_planogram_fact.product_id = product_master.product_id
+group by
+	storechecks_planogram_fact.visit_id),
 -- calculating count of present and oos product on brand level based on all_top_sku (legacy kpi setup until '2021-10-01') and product_group (current kpi setup) 
 --from storechecks_product_fact(legacy) and storechecks_kpi_fact_view(current)
 cte_product_count
@@ -311,6 +338,8 @@ select
 	cte_product_facing_fact.brand_total_shelf_facing,
 	cte_product_facing_fact_segment.total_primary_shelf_facing,
 	cte_product_facing_fact_segment.total_shelf_facing,
+	cte_product_facing_fact_visit.total_primary_shelf_facing_visit,
+	cte_product_facing_fact_visit.total_shelf_facing_visit,
 	cte_product_count.present_count,
 	cte_product_count.oos_count,
 	visibility_score_weight.psku_weight,
@@ -358,6 +387,8 @@ left join cte_product_facing_fact on
 left join cte_product_facing_fact_segment on
 	cte_visit_product_dim.visit_id = cte_product_facing_fact_segment.visit_id
 	and cte_visit_product_dim.seg1::text = cte_product_facing_fact_segment.seg1::text
+left join cte_product_facing_fact_visit on
+	cte_visit_product_dim.visit_id = cte_product_facing_fact_visit.visit_id
 left join cte_product_count on
 	cte_visit_product_dim.visit_id = cte_product_count.visit_id
 	and cte_visit_product_dim.seg1::text = cte_product_count.seg1::text
@@ -394,6 +425,8 @@ group by
 	cte_product_facing_fact.brand_total_shelf_facing,
 	cte_product_facing_fact_segment.total_primary_shelf_facing,
 	cte_product_facing_fact_segment.total_shelf_facing,
+	cte_product_facing_fact_visit.total_primary_shelf_facing_visit,
+	cte_product_facing_fact_visit.total_shelf_facing_visit,
 	cte_product_count.present_count,
 	cte_product_count.oos_count,
 	visibility_score_weight.psku_weight,
