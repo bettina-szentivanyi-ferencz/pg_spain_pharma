@@ -1,4 +1,3 @@
-
 DROP VIEW IF EXISTS procter_and_gamble_es_pharma.visibility_points_compliance CASCADE;
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.visibility_points_compliance as
 -- calculating visibility points from storechecks_planogram_fact
@@ -60,13 +59,13 @@ group by
 	cte_visibility_points.seg1 AS segment, 
 	cte_visibility_points.brand, 
         CASE
-            WHEN cte_visibility_points.on_counter_point > 1 
+            WHEN cte_visibility_points.on_counter_point >= 1 
             	and cte_visibility_points.seg1 in ('Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN 1
             when cte_visibility_points.seg1 not in ('Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN null::smallint
             ELSE 0
         END AS oc_compliance, 
         CASE
-            WHEN cte_visibility_points.tzone_point > 1 
+            WHEN cte_visibility_points.tzone_point >= 1 
             and cte_visibility_points.seg1 in ('POC','Toothpastes','Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN 1
             WHEN cte_visibility_points.seg1 not in ('POC','Toothpastes','Denture Adhesives','Rubs','MSR','Nasal Deco','Calm&Sleep','Vitamine D','Vitamine C','Multivitaminics') THEN null::smallint
             ELSE 0
