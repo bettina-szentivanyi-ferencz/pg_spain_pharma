@@ -1,5 +1,5 @@
-DROP VIEW IF EXISTS procter_and_gamble_es_pharma.brand_block_rules CASCADE;
-CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.brand_block_rules as
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.brand_block_rules_view CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.brand_block_rules_view as
 with recursive
 cte_perfect_shelf_compliance_with_modification
 -- old pg_rules_staging
@@ -108,9 +108,9 @@ group by
 	cte_perfect_shelf_compliance.display_group,
 	cte_perfect_shelf_compliance.compliance;
   
-GRANT SELECT ON procter_and_gamble_es_pharma.brand_block_rules TO powerbi_user1;
-GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.brand_block_rules TO plano_auto_export;
-GRANT SELECT ON procter_and_gamble_es_pharma.brand_block_rules TO pg_es_pharma;
+GRANT SELECT ON procter_and_gamble_es_pharma.brand_block_rules_view TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.brand_block_rules_view TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.brand_block_rules_view TO pg_es_pharma;
 
 
 COMMIT;
