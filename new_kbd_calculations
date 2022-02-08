@@ -112,12 +112,16 @@ select
 	sum(
         case
             when storechecks_planogram_fact.photo_group_type::text in ('Lineal'::character varying::text,'Lineal libre acceso'::character varying::text,'Lineal detrás del mostrador'::character varying::text) 
+            and product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text
+			and product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text
             then storechecks_planogram_fact.facings::double precision
             else null::double precision
         end) as total_primary_shelf_facing_visit,
     sum(
         case
             when storechecks_planogram_fact.photo_group_type::text <> 'Otros'::character varying::text
+            and product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text
+			and product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text
             then storechecks_planogram_fact.facings::double precision
             else null::double precision
         end) as total_shelf_facing_visit
