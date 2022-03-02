@@ -1,6 +1,6 @@
 DROP VIEW IF EXISTS procter_and_gamble_es_pharma.best_visits_2022 CASCADE;
-CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.best_visits_2022
-AS SELECT
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.best_visits_2022 AS
+SELECT
 	kbd_base.store_id,
 	kbd_base.quarter,
 	kbd_base."month",
@@ -28,6 +28,7 @@ AS SELECT
 	(pg_catalog.rank()
   over( 
   partition by kbd_base.store_id,
+  kbd_base."year",
 	kbd_base."month",
 	kbd_base.seg1,
 	kbd_base.brand
@@ -42,6 +43,7 @@ order by
 	end desc)) + (pg_catalog.row_number()
   over( 
   partition by kbd_base.store_id,
+  kbd_base."year",
 	kbd_base."month",
 	kbd_base.seg1,
 	kbd_base.brand
@@ -58,6 +60,7 @@ order by
 		when ((pg_catalog.rank()
       over( 
       partition by kbd_base.store_id,
+    kbd_base."year",
 		kbd_base."month",
 		kbd_base.seg1,
 		kbd_base.brand
@@ -72,6 +75,7 @@ order by
 		end desc)) + (pg_catalog.row_number()
       over( 
       partition by kbd_base.store_id,
+    kbd_base."year",
 		kbd_base."month",
 		kbd_base.seg1,
 		kbd_base.brand
@@ -89,6 +93,7 @@ order by
 	(pg_catalog.rank()
   over( 
   partition by kbd_base.store_id,
+  kbd_base."year",
 	kbd_base.quarter,
 	kbd_base.seg1,
 	kbd_base.brand
@@ -103,6 +108,7 @@ order by
 	end desc)) + (pg_catalog.row_number()
   over( 
   partition by kbd_base.store_id,
+  kbd_base."year",
 	kbd_base.quarter,
 	kbd_base.seg1,
 	kbd_base.brand
@@ -119,6 +125,7 @@ order by
 		when ((pg_catalog.rank()
       over( 
       partition by kbd_base.store_id,
+    kbd_base."year",
 		kbd_base.quarter,
 		kbd_base.seg1,
 		kbd_base.brand
@@ -133,6 +140,7 @@ order by
 		end desc)) + (pg_catalog.row_number()
       over( 
       partition by kbd_base.store_id,
+    kbd_base."year",
 		kbd_base.quarter,
 		kbd_base.seg1,
 		kbd_base.brand
@@ -226,14 +234,13 @@ from
 		(kbd_calculations.present_count::numeric * 1.0 / (kbd_calculations.present_count + kbd_calculations.oos_count)::numeric * 1.0)::double precision * kbd_calculations.psku_weight as psku_index,
 		kbd_calculations.sp_compliance::double precision * kbd_calculations.sp_weight as oc_index,
 		kbd_calculations.tf_compliance::double precision * kbd_calculations.tf_weight as bc_index,
-		(kbd_calculations.present_count::numeric * 1.0 / (kbd_calculations.present_count + kbd_calculations.oos_count)::numeric * 1.0)::double precision * kbd_calculations.psku_weight + kbd_calculations.sp_compliance::double precision * kbd_calculations.sp_weight + kbd_calculations.tf_compliance::double precision * kbd_calculations.tf_weight as kbd_index_no_pv
+																												   
+		(kbd_calculations.present_count::numeric * 1.0 / (kbd_calculations.present_count + kbd_calculations.oos_count)::numeric * 1.0)::double precision 
+		* kbd_calculations.psku_weight + kbd_calculations.sp_compliance::double precision * kbd_calculations.sp_weight + kbd_calculations.tf_compliance::double precision * kbd_calculations.tf_weight as kbd_index_no_pv
 	from
 		procter_and_gamble_es_pharma.kbd_calculations) kbd_base;
 		
-	
 GRANT SELECT ON procter_and_gamble_es_pharma.best_visits_2022 TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.best_visits_2022 TO plano_auto_export;
 GRANT SELECT ON procter_and_gamble_es_pharma.best_visits_2022 TO pg_es_pharma;
 
-
-COMMIT;
