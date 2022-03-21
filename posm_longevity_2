@@ -1,0 +1,249 @@
+  with recursive
+-- filtering posms which are complaint
+posm_help_table_3
+as
+(
+select
+  posm_help_table_2.store_id,
+  posm_help_table_2.internal_code,
+  posm_help_table_2.owner_id,
+  posm_help_table_2.visit_id,
+  posm_help_table_2.visit_date_key,
+  posm_help_table_2.partition_id,
+  posm_help_table_2.join_id,
+  posm_help_table_2.previous_visit_date_key,
+  case 
+  when previous_visit_date_key is null then 0::integer
+  else
+  datediff(day, cast(previous_visit_date_key as date), cast(visit_date_key as date)) 
+  end AS visit_date_key_diff,
+  posm_help_table_2.categ_name,
+  posm_help_table_2.brand,
+  posm_help_table_2.posm_type,
+  posm_help_table_2.posm_name,
+  posm_help_table_2.posm_compliance,
+  posm_help_table_2.previous_posm_compliance,
+  case when previous_posm_compliance = 0 then 2::integer
+  when previous_posm_compliance is null then 0::integer
+  when previous_posm_compliance = 1 then 0::integer
+  when previous_posm_compliance = 0 then 0::integer
+  else null 
+  end as previous_posm_compliance_ranking
+  from procter_and_gamble_es_pharma.posm_help_table_2)
+  select 
+  posm_help_table_3.store_id,
+  posm_help_table_3.internal_code,
+  posm_help_table_3.owner_id,
+  posm_help_table_3.visit_id,
+  posm_help_table_3.partition_id,
+  posm_help_table_3.join_id,
+  posm_help_table_3.visit_date_key,
+  posm_help_table_3.previous_visit_date_key,
+  posm_help_table_3.visit_date_key_diff,
+  posm_help_table_3.categ_name,
+  posm_help_table_3.brand,
+  posm_help_table_3.posm_type,
+  posm_help_table_3.posm_name,
+  posm_help_table_3.posm_compliance,
+  posm_help_table_3.previous_posm_compliance,
+  posm_help_table_3.previous_posm_compliance_ranking,
+  rank() over (partition by partition_id order by store_id, previous_posm_compliance_ranking, visit_date_key  asc) as visit_rank,
+  sum(visit_date_key_diff) over (partition by partition_id
+  order by store_id, visit_date_key rows unbounded preceding) as longevity_days
+  from posm_help_table_3
+  where store_id='5d70e280c3f188de6efb5329'
+  order by 
+  store_id,
+  visit_date_key asc,
+  posm_name;
+  
+  
+    DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_help_table_2 CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_help_table_2  AS 
+select
+  posm_help_table.store_id,
+  posm_help_table.internal_code,
+  posm_help_table.owner_id,
+  posm_help_table.visit_id,
+  posm_help_table.visit_date_key,
+  posm_help_table.partition_id,
+  posm_help_table.join_id,
+  LAG(posm_help_table.visit_date_key) OVER (PARTITION BY posm_help_table.partition_id ORDER BY posm_help_table.visit_date_key asc) AS previous_visit_date_key,
+  posm_help_table.categ_name,
+  posm_help_table.brand,
+  posm_help_table.posm_type,
+  posm_help_table.posm_name,
+  LAG(posm_help_table.posm_compliance) OVER (PARTITION BY posm_help_table.partition_id ORDER BY posm_help_table.visit_date_key asc) AS previous_posm_compliance,
+  posm_help_table.posm_compliance
+  FROM procter_and_gamble_es_pharma.posm_help_table
+  order by 
+  store_id,
+  visit_date_key asc,
+  posm_name;
+  
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table_2 TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_help_table_2 TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table_2 TO pg_es_pharma;
+
+
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_help_table CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_help_table  AS
+with recursive
+-- filtering posms which are complaint
+cte_compliant_posm
+-- old z
+as
+(
+select
+  posm_compliance.store_id,
+  posm_compliance.internal_code,
+  posm_compliance.owner_id,
+  posm_compliance.visit_id,
+  posm_compliance.visit_date_key,
+  posm_compliance.categ_name,
+  posm_compliance.brand,
+  posm_compliance.posm_type,
+  posm_compliance.posm_name,
+  posm_compliance.posm_type_compliance,
+  posm_compliance.posm_name_compliance
+from
+	procter_and_gamble_es_pharma.posm_compliance posm_compliance
+	where visit_date_key > '2022-01-01'),
+-- counting visits per store
+cte_visit_count
+as
+(
+select
+  cte_compliant_posm.store_id,
+  cte_compliant_posm.internal_code,
+  cte_compliant_posm.categ_name,
+  count(distinct cte_compliant_posm.visit_date_key) as count_visit_date
+  from
+	cte_compliant_posm
+  group by 
+  cte_compliant_posm.store_id,
+  cte_compliant_posm.internal_code,
+  cte_compliant_posm.categ_name
+),
+
+--filtering posms from product_master
+cte_posm_helping_table
+as 
+(select
+	product_master.base,
+	product_master.brand,
+	split_part(product_master.desc_i::text, ' - '::character varying::text, 1)::character varying as posm,
+	split_part(product_master.desc_i::text, ' - '::character varying::text, 2)::character varying as posm_type,
+	product_master.description as posm_name
+from
+	procter_and_gamble_es_pharma.product_master product_master
+where
+  product_master.desc_i<>''
+	and product_master.manufacturer::text = 'Procter and Gamble'::character varying::text
+	and product_master.product_id::text <>'61892755fdcd982780006c64' 
+	and  product_master.product_id::text <>'6189270bfdcd982780006c07' 
+	and  product_master.product_id::text <>'618927d7fdcd982a48003b46' 
+	and product_master.product_id::text <>'61892866fdcd9843b8006970'
+group by
+	product_master.base,
+	product_master.brand,
+	product_master.description,
+	product_master.desc_i),
+-- creating missing rules data 
+cte_missing_rules_table
+as 
+(
+select 
+  cte_compliant_posm.store_id,
+  cte_compliant_posm.internal_code,
+  cte_compliant_posm.owner_id,
+  cte_compliant_posm.visit_id,
+  cte_compliant_posm.visit_date_key,
+  cte_compliant_posm.categ_name,
+  cte_posm_helping_table.brand,
+  cte_posm_helping_table.posm_type,
+  cte_posm_helping_table.posm_name
+from cte_compliant_posm cte_compliant_posm,
+cte_posm_helping_table cte_posm_helping_table
+where cte_compliant_posm.categ_name=cte_posm_helping_table.base
+except
+select
+  cte_compliant_posm.store_id,
+  cte_compliant_posm.internal_code,
+  cte_compliant_posm.owner_id,
+  cte_compliant_posm.visit_id,
+  cte_compliant_posm.visit_date_key,
+  cte_compliant_posm.categ_name,
+  cte_posm_helping_table.brand,
+  cte_posm_helping_table.posm_type,
+  cte_posm_helping_table.posm_name
+from cte_compliant_posm cte_compliant_posm,
+cte_posm_helping_table cte_posm_helping_table
+where cte_compliant_posm.categ_name =cte_posm_helping_table.base
+and cte_compliant_posm.brand =cte_posm_helping_table.brand
+and cte_compliant_posm.posm_type =cte_posm_helping_table.posm_type
+and cte_compliant_posm.posm_name =cte_posm_helping_table.posm_name),
+
+cte_posm_compliance_with_non_compliant
+as 
+(
+select 
+  cte_compliant_posm.store_id,
+  cte_compliant_posm.internal_code,
+  cte_compliant_posm.owner_id,
+  cte_compliant_posm.visit_id,
+  cte_compliant_posm.visit_date_key,
+  cte_compliant_posm.categ_name,
+  cte_compliant_posm.brand,
+  cte_compliant_posm.posm_type,
+  cte_compliant_posm.posm_name,
+  cte_compliant_posm.posm_name_compliance		as posm_compliance	
+from
+cte_compliant_posm
+where cte_compliant_posm.posm_name is not null
+and cte_compliant_posm.visit_date_key > '2022-01-01'
+UNION
+select
+  cte_missing_rules_table.store_id,
+  cte_missing_rules_table.internal_code,
+  cte_missing_rules_table.owner_id,
+  cte_missing_rules_table.visit_id,
+  cte_missing_rules_table.visit_date_key,
+  cte_missing_rules_table.categ_name,
+  cte_missing_rules_table.brand,
+  cte_missing_rules_table.posm_type,
+  cte_missing_rules_table.posm_name,
+  0::integer as posm_compliance			
+from cte_missing_rules_table
+where cte_missing_rules_table.posm_name is not null
+and cte_missing_rules_table.visit_date_key > '2022-01-01')
+select
+  cte_posm_compliance_with_non_compliant.store_id,
+  cte_posm_compliance_with_non_compliant.internal_code,
+  cte_posm_compliance_with_non_compliant.owner_id,
+  cte_posm_compliance_with_non_compliant.store_id::text || cte_posm_compliance_with_non_compliant.categ_name::text ||cte_posm_compliance_with_non_compliant.posm_name  as partition_id,
+  cte_posm_compliance_with_non_compliant.store_id::text || cte_posm_compliance_with_non_compliant.categ_name::text ||cte_posm_compliance_with_non_compliant.visit_date_key::text ||cte_posm_compliance_with_non_compliant.posm_name  as join_id,
+  cte_posm_compliance_with_non_compliant.visit_id,
+  cte_posm_compliance_with_non_compliant.visit_date_key,
+  cte_posm_compliance_with_non_compliant.categ_name,
+  cte_posm_compliance_with_non_compliant.brand,
+  cte_posm_compliance_with_non_compliant.posm_type,
+  cte_posm_compliance_with_non_compliant.posm_name,
+  cte_posm_compliance_with_non_compliant.posm_compliance,
+  cte_visit_count.count_visit_date
+  from cte_posm_compliance_with_non_compliant cte_posm_compliance_with_non_compliant,
+  cte_visit_count cte_visit_count
+  where 
+  cte_visit_count.store_id=cte_posm_compliance_with_non_compliant.store_id
+  and cte_visit_count.internal_code=cte_posm_compliance_with_non_compliant.internal_code
+  and cte_visit_count.categ_name=cte_posm_compliance_with_non_compliant.categ_name
+  and count_visit_date >= 2
+  and posm_name='NUEVA CASITA PREFILL VICKS FY2122 technical generic'
+  order by 
+  store_id,
+  visit_date_key desc,
+  posm_name;
+  
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_help_table TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table TO pg_es_pharma;
