@@ -183,7 +183,7 @@ select
   visit_date_key asc,
   posm_name;
   
-  DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_longevity CASCADE;
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_longevity CASCADE;
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_longevity  AS 
 
 with recursive
@@ -302,8 +302,10 @@ select
   posm_help_table_6.posm_compliance,
   posm_help_table_6.previous_posm_compliance,
   case when posm_help_table_6.previous_visit_date_key is null then null
+  when posm_help_table_6.visit_date_key_diff = 0 then null
   when posm_help_table_6.posm_compliance=0 then null
-  when posm_help_table_6.posm_compliance=1 then posm_help_table_6.longevity_days
+  when (posm_help_table_6.posm_compliance=1 and previous_posm_compliance=0) then null
+  when (posm_help_table_6.posm_compliance=1 and previous_posm_compliance=1) then posm_help_table_6.longevity_days
   else null end as longevity_days
   from posm_help_table_6  
   order by 
@@ -315,3 +317,4 @@ select
 GRANT SELECT ON procter_and_gamble_es_pharma.posm_longevity TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_longevity TO plano_auto_export;
 GRANT SELECT ON procter_and_gamble_es_pharma.posm_longevity TO pg_es_pharma;
+
