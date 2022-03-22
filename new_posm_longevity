@@ -32,6 +32,7 @@ select
   count(distinct cte_compliant_posm.visit_date_key) as count_visit_date
   from
 	cte_compliant_posm
+  where cte_compliant_posm.visit_date_key > '2022-01-01'
   group by 
   cte_compliant_posm.store_id,
   cte_compliant_posm.internal_code,
