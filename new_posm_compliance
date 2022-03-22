@@ -96,6 +96,9 @@ select
 	end as posm_name_compliance
 from 
 cte_visit_product_dim cte_visit_product_dim
+left join procter_and_gamble_es_pharma.kbd_calculations kbd_calculations on kbd_calculations.visit_id=cte_visit_product_dim.visit_id
+and kbd_calculations.categ_name=cte_visit_product_dim.categ_name 
+and  kbd_calculations.brand=cte_visit_product_dim.brand
 left join cte_posm_fact cte_posm_fact on cte_posm_fact.visit_id=cte_visit_product_dim.visit_id
 and cte_posm_fact.base=cte_visit_product_dim.categ_name 
 and  cte_posm_fact.brand=cte_visit_product_dim.brand
@@ -103,9 +106,6 @@ left join posm_fact_product_level posm_fact_product_level on posm_fact_product_l
 and posm_fact_product_level.base=cte_visit_product_dim.categ_name 
 and cte_posm_fact.type_name=posm_fact_product_level.type_name
 and  posm_fact_product_level.brand=cte_visit_product_dim.brand
-left join kbd_calculations kbd_calculations on kbd_calculations.visit_id=cte_visit_product_dim.visit_id
-and kbd_calculations.categ_name=cte_visit_product_dim.categ_name 
-and  kbd_calculations.brand=cte_visit_product_dim.brand
 join procter_and_gamble_es_pharma.store_master store_master on  cte_visit_product_dim.store_id = store_master.store_id
 group by 
 	cte_visit_product_dim.store_id,
