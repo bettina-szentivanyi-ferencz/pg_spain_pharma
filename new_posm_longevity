@@ -1,7 +1,7 @@
 DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_help_table CASCADE;
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_help_table  AS
 with recursive
--- filtering posms which are complaint
+-- filtering posm results from posm_compliance table
 cte_compliant_posm
 -- old z
 as
@@ -21,7 +21,7 @@ select
 from
 	procter_and_gamble_es_pharma.posm_compliance posm_compliance
 	where visit_date_key > '2022-01-01'),
--- counting visits per store
+-- counting visits per store+category combination to be able to add >2 condition to final table
 cte_visit_count
 as
 (
@@ -39,7 +39,7 @@ select
   cte_compliant_posm.categ_name
 ),
 
---filtering posms from product_master
+--filtering posms from product_master to be able to create non-compliant results
 cte_posm_helping_table
 as 
 (select
@@ -62,7 +62,7 @@ group by
 	product_master.brand,
 	product_master.description,
 	product_master.desc_i),
--- creating missing rules data 
+-- creating missing (non-complaint) rules data 
 cte_missing_rules_table
 as 
 (
@@ -96,7 +96,7 @@ where cte_compliant_posm.categ_name =cte_posm_helping_table.base
 and cte_compliant_posm.brand =cte_posm_helping_table.brand
 and cte_compliant_posm.posm_type =cte_posm_helping_table.posm_type
 and cte_compliant_posm.posm_name =cte_posm_helping_table.posm_name),
-
+-- creating the final table which contains tha complaint and non-compliant results
 cte_posm_compliance_with_non_compliant
 as 
 (
@@ -160,6 +160,7 @@ GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_help_table TO plano_auto_export;
 GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table TO pg_es_pharma;
 
+-- table which contains the previous_visit_date column and previous_posm_compliance column
 DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_help_table_2 CASCADE;
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_help_table_2  AS 
 select
@@ -187,7 +188,7 @@ DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_longevity CASCADE;
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_longevity  AS 
 
 with recursive
--- filtering posms which are complaint
+-- table which calculated difference between visit_date and previous visit_date
 posm_help_table_3
 as
 (
@@ -213,6 +214,7 @@ select
   case when previous_posm_compliance is null then 0::integer
   else previous_posm_compliance end as previous_posm_compliance
   from procter_and_gamble_es_pharma.posm_help_table_2),
+  -- table which create ranking based on pattern of compliant and non-compliant results
 posm_help_table_4
 as
 (
@@ -238,6 +240,7 @@ as
   store_id,
   visit_date_key asc,
   posm_name),
+  -- table which contains the partition_id_2 which drives the final calculation of longevity_days (cumulated visit_date_diff which starts over if a visit_date is non-complaint)
 posm_help_table_5
 as
 (  
@@ -263,6 +266,7 @@ select
   store_id,
   visit_date_key asc,
   posm_name),
+-- table which calculates the cumulated longevity_days results with grouped rank logic
 posm_help_table_6
 as
 (  
@@ -287,6 +291,7 @@ select
   store_id,
   visit_date_key asc,
   posm_name)
+  -- table which contains the final logic of longevity_days calculation
  select 
   posm_help_table_6.store_id,
   posm_help_table_6.internal_code,
