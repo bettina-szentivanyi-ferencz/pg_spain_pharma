@@ -1,3 +1,8 @@
+--dependency of the views
+--1.posm_help_table
+--2.posm_help_table_2
+--3.posm_longevity
+
 DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_help_table CASCADE;
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_help_table  AS
 with recursive
