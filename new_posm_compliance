@@ -93,7 +93,8 @@ select
 	end as posm_type_compliance,
 	case when  posm_fact_product_level.posm_name_compliance is null then 0::integer
 	else 1
-	end as posm_name_compliance
+	end as posm_name_compliance,
+	posm_name_compliance as number_of_posm
 from 
 cte_visit_product_dim cte_visit_product_dim
 left join procter_and_gamble_es_pharma.kbd_calculations kbd_calculations on kbd_calculations.visit_id=cte_visit_product_dim.visit_id
