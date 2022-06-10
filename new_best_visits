@@ -31,7 +31,11 @@ select
 	kbd_calculations.seg1,
 	kbd_calculations.brand
 order by
-	kbd_calculations.visit_date_key)) as row_number_kbd_base
+	kbd_calculations.store_id,
+  kbd_calculations.seg1,
+  kbd_calculations.brand,	
+	kbd_calculations.visit_date_key,
+	kbd_calculations.visit_id)) as row_number_kbd_base
 from
 		procter_and_gamble_es_pharma.kbd_calculations),
 
