@@ -33,16 +33,16 @@ select
 	sum(
 	case 
 	when (cte_count_category.categ_name in('Cuidado Oral - Oral Care','Diagnóstico - Pregnancy','Respiratorio - Cough & Cold','Vitaminas - Vitamins')
-	and  date_part(month, date(cte_count_category.visit_date_key))in(1,2,3,7,8,9,10,11,12))
+	and  date_part(month, date(cte_count_category.visit_date_key))in(1,2,3,4,5,6,10,11,12))
 	or
 	(cte_count_category.categ_name in('Cuidado Oral - Oral Care','Diagnóstico - Pregnancy','Vitaminas - Vitamins')        
-	and date_part(month, date(cte_count_category.visit_date_key))in(4,5,6))
+	and date_part(month, date(cte_count_category.visit_date_key))in(7,8,9))
 	then cte_count_category.count_category::integer
 	else  0
 	end) as count_category, -- count priority category
 	case 
-	when date_part(month, date(cte_count_category.visit_date_key))in(1,2,3,7,8,9,10,11,12) then 4::integer
-	when date_part(month, date(cte_count_category.visit_date_key))in(4,5,6) then 3::integer
+	when date_part(month, date(cte_count_category.visit_date_key))in(1,2,3,4,5,6,10,11,12) then 4::integer
+	when date_part(month, date(cte_count_category.visit_date_key))in(7,8,9) then 3::integer
 	else  null::double precision
 	end as target_category,
 	sum(count_category) as total_category -- target priority category
