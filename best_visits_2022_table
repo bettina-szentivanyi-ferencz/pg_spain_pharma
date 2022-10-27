@@ -1,0 +1,678 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.best_visits_2022_table CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.best_visits_2022_table
+(
+  store_id,
+  year,
+  quarter,
+  month,
+  visit_date_key,
+  visit_id,
+  seg1,
+  brand,
+  uid,
+  kbd_index_no_pv_new,
+  pv_index_new,
+  kbd_index,
+  best_in_month_num,
+  best_in_quarter_num,
+  best_in_year_num,
+  best_in_month,
+  best_in_quarter,
+  best_in_year
+)
+AS 
+ SELECT kbd_base_with_ranking.store_id, kbd_base_with_ranking."year", kbd_base_with_ranking.quarter, kbd_base_with_ranking."month", kbd_base_with_ranking.visit_date_key, kbd_base_with_ranking.visit_id, kbd_base_with_ranking.seg1, kbd_base_with_ranking.brand, kbd_base_with_ranking.uid, kbd_base_with_ranking.kbd_index_no_pv_new, kbd_base_with_ranking.pv_index_new, kbd_base_with_ranking.kbd_index, kbd_base_with_ranking.best_in_month_num, kbd_base_with_ranking.best_in_quarter_num, kbd_base_with_ranking.best_in_year_num, 
+        CASE
+            WHEN (kbd_base_with_ranking.visit_uid_month IN ( SELECT kbd_base_month.visit_uid_month
+               FROM ( SELECT kbd_base_with_ranking.visit_uid_month, kbd_base_with_ranking.uid_month
+                       FROM ( SELECT kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base."month", kbd_base.visit_id, kbd_base.seg1, kbd_base.brand, (kbd_base.visit_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text AS uid, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS visit_uid_month, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS visit_uid_quarter, ((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS visit_uid_year, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS uid_month, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS uid_quarter, ((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS uid_year, kbd_base.visit_date_key, 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END AS kbd_index_no_pv_new, 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END AS pv_index_new, 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END AS kbd_index, kbd_base.row_number_kbd_base, pg_catalog.row_number()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS best_in_month_num, pg_catalog.row_number()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS best_in_quarter_num, pg_catalog.row_number()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS best_in_year_num, pg_catalog.rank()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS month_ranking, pg_catalog.rank()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS quarter_ranking, pg_catalog.rank()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS year_ranking
+                               FROM ( SELECT kbd_calculations_table.store_id, pgdate_part('mon'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "month", pgdate_part('qtr'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS quarter, pgdate_part('y'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "year", kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.compliance * kbd_calculations_table.pv_weight AS pv_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight AS psku_index, kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight AS oc_index, kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS bc_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight + kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight + kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS kbd_index_no_pv, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand
+                                      ORDER BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id) AS row_number_kbd_base
+                                       FROM procter_and_gamble_es_pharma.kbd_calculations_table) kbd_base) kbd_base_with_ranking
+                  JOIN ( SELECT kbd_base_with_ranking.uid_month, min(kbd_base_with_ranking.visit_date_key::character varying::text) AS mindate, min(kbd_base_with_ranking.row_number_kbd_base) AS minrow_number_kbd_base
+                               FROM ( SELECT kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base."month", kbd_base.visit_id, kbd_base.seg1, kbd_base.brand, (kbd_base.visit_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text AS uid, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS visit_uid_month, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS visit_uid_quarter, ((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS visit_uid_year, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS uid_month, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS uid_quarter, ((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS uid_year, kbd_base.visit_date_key, 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END AS kbd_index_no_pv_new, 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END AS pv_index_new, 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END AS kbd_index, kbd_base.row_number_kbd_base, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS best_in_month_num, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS best_in_quarter_num, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS best_in_year_num, pg_catalog.rank()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS month_ranking, pg_catalog.rank()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS quarter_ranking, pg_catalog.rank()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS year_ranking
+                                       FROM ( SELECT kbd_calculations_table.store_id, pgdate_part('mon'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "month", pgdate_part('qtr'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS quarter, pgdate_part('y'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "year", kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.compliance * kbd_calculations_table.pv_weight AS pv_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight AS psku_index, kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight AS oc_index, kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS bc_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight + kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight + kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS kbd_index_no_pv, pg_catalog.row_number()
+                                              OVER( 
+                                              PARTITION BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand
+                                              ORDER BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id) AS row_number_kbd_base
+                                               FROM procter_and_gamble_es_pharma.kbd_calculations_table) kbd_base) kbd_base_with_ranking
+                              WHERE kbd_base_with_ranking.month_ranking = 1
+                              GROUP BY kbd_base_with_ranking.uid_month) kbd_base_with_min_visit_date_month ON kbd_base_with_ranking.uid_month = kbd_base_with_min_visit_date_month.uid_month AND kbd_base_with_ranking.visit_date_key::character varying::text = kbd_base_with_min_visit_date_month.mindate AND kbd_base_with_ranking.row_number_kbd_base = kbd_base_with_min_visit_date_month.minrow_number_kbd_base
+                 WHERE kbd_base_with_ranking.month_ranking = 1) kbd_base_month
+              WHERE kbd_base_month.visit_uid_month = kbd_base_with_ranking.visit_uid_month)) THEN 'YES'::character varying
+            ELSE 'NO'::character varying
+        END AS best_in_month, 
+        CASE
+            WHEN (kbd_base_with_ranking.visit_uid_quarter IN ( SELECT kbd_base_quarter.visit_uid_quarter
+               FROM ( SELECT kbd_base_with_ranking.visit_uid_quarter, kbd_base_with_ranking.uid_quarter
+                       FROM ( SELECT kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base."month", kbd_base.visit_id, kbd_base.seg1, kbd_base.brand, (kbd_base.visit_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text AS uid, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS visit_uid_month, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS visit_uid_quarter, ((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS visit_uid_year, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS uid_month, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS uid_quarter, ((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS uid_year, kbd_base.visit_date_key, 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END AS kbd_index_no_pv_new, 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END AS pv_index_new, 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END AS kbd_index, kbd_base.row_number_kbd_base, pg_catalog.row_number()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS best_in_month_num, pg_catalog.row_number()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS best_in_quarter_num, pg_catalog.row_number()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS best_in_year_num, pg_catalog.rank()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS month_ranking, pg_catalog.rank()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS quarter_ranking, pg_catalog.rank()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS year_ranking
+                               FROM ( SELECT kbd_calculations_table.store_id, pgdate_part('mon'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "month", pgdate_part('qtr'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS quarter, pgdate_part('y'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "year", kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.compliance * kbd_calculations_table.pv_weight AS pv_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight AS psku_index, kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight AS oc_index, kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS bc_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight + kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight + kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS kbd_index_no_pv, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand
+                                      ORDER BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id) AS row_number_kbd_base
+                                       FROM procter_and_gamble_es_pharma.kbd_calculations_table) kbd_base) kbd_base_with_ranking
+                  JOIN ( SELECT kbd_base_with_ranking.uid_quarter, min(kbd_base_with_ranking.visit_date_key::character varying::text) AS mindate, min(kbd_base_with_ranking.row_number_kbd_base) AS minrow_number_kbd_base
+                               FROM ( SELECT kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base."month", kbd_base.visit_id, kbd_base.seg1, kbd_base.brand, (kbd_base.visit_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text AS uid, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS visit_uid_month, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS visit_uid_quarter, ((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS visit_uid_year, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS uid_month, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS uid_quarter, ((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS uid_year, kbd_base.visit_date_key, 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END AS kbd_index_no_pv_new, 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END AS pv_index_new, 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END AS kbd_index, kbd_base.row_number_kbd_base, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS best_in_month_num, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS best_in_quarter_num, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS best_in_year_num, pg_catalog.rank()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS month_ranking, pg_catalog.rank()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS quarter_ranking, pg_catalog.rank()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS year_ranking
+                                       FROM ( SELECT kbd_calculations_table.store_id, pgdate_part('mon'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "month", pgdate_part('qtr'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS quarter, pgdate_part('y'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "year", kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.compliance * kbd_calculations_table.pv_weight AS pv_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight AS psku_index, kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight AS oc_index, kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS bc_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight + kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight + kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS kbd_index_no_pv, pg_catalog.row_number()
+                                              OVER( 
+                                              PARTITION BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand
+                                              ORDER BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id) AS row_number_kbd_base
+                                               FROM procter_and_gamble_es_pharma.kbd_calculations_table) kbd_base) kbd_base_with_ranking
+                              WHERE kbd_base_with_ranking.quarter_ranking = 1
+                              GROUP BY kbd_base_with_ranking.uid_quarter) kbd_base_with_min_visit_date_quarter ON kbd_base_with_ranking.uid_quarter = kbd_base_with_min_visit_date_quarter.uid_quarter AND kbd_base_with_ranking.visit_date_key::character varying::text = kbd_base_with_min_visit_date_quarter.mindate AND kbd_base_with_ranking.row_number_kbd_base = kbd_base_with_min_visit_date_quarter.minrow_number_kbd_base
+                 WHERE kbd_base_with_ranking.quarter_ranking = 1) kbd_base_quarter
+              WHERE kbd_base_quarter.visit_uid_quarter = kbd_base_with_ranking.visit_uid_quarter)) THEN 'YES'::character varying
+            ELSE 'NO'::character varying
+        END AS best_in_quarter, 
+        CASE
+            WHEN (kbd_base_with_ranking.visit_uid_year IN ( SELECT kbd_base_year.visit_uid_year
+               FROM ( SELECT kbd_base_with_ranking.visit_uid_year, kbd_base_with_ranking.uid_year
+                       FROM ( SELECT kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base."month", kbd_base.visit_id, kbd_base.seg1, kbd_base.brand, (kbd_base.visit_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text AS uid, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS visit_uid_month, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS visit_uid_quarter, ((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS visit_uid_year, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS uid_month, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS uid_quarter, ((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS uid_year, kbd_base.visit_date_key, 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END AS kbd_index_no_pv_new, 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END AS pv_index_new, 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END AS kbd_index, kbd_base.row_number_kbd_base, pg_catalog.row_number()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS best_in_month_num, pg_catalog.row_number()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS best_in_quarter_num, pg_catalog.row_number()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS best_in_year_num, pg_catalog.rank()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS month_ranking, pg_catalog.rank()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS quarter_ranking, pg_catalog.rank()
+                              OVER( 
+                              PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                              ORDER BY 
+                                    CASE
+                                        WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                        ELSE kbd_base.kbd_index_no_pv
+                                    END + 
+                                    CASE
+                                        WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                        ELSE kbd_base.pv_index
+                                    END DESC) AS year_ranking
+                               FROM ( SELECT kbd_calculations_table.store_id, pgdate_part('mon'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "month", pgdate_part('qtr'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS quarter, pgdate_part('y'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "year", kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.compliance * kbd_calculations_table.pv_weight AS pv_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight AS psku_index, kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight AS oc_index, kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS bc_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight + kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight + kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS kbd_index_no_pv, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand
+                                      ORDER BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id) AS row_number_kbd_base
+                                       FROM procter_and_gamble_es_pharma.kbd_calculations_table) kbd_base) kbd_base_with_ranking
+                  JOIN ( SELECT kbd_base_with_ranking.uid_year, min(kbd_base_with_ranking.visit_date_key::character varying::text) AS mindate, min(kbd_base_with_ranking.row_number_kbd_base) AS minrow_number_kbd_base
+                               FROM ( SELECT kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base."month", kbd_base.visit_id, kbd_base.seg1, kbd_base.brand, (kbd_base.visit_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text AS uid, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS visit_uid_month, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS visit_uid_quarter, ((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS visit_uid_year, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS uid_month, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS uid_quarter, ((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS uid_year, kbd_base.visit_date_key, 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END AS kbd_index_no_pv_new, 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END AS pv_index_new, 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END AS kbd_index, kbd_base.row_number_kbd_base, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS best_in_month_num, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS best_in_quarter_num, pg_catalog.row_number()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS best_in_year_num, pg_catalog.rank()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS month_ranking, pg_catalog.rank()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS quarter_ranking, pg_catalog.rank()
+                                      OVER( 
+                                      PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+                                      ORDER BY 
+                                            CASE
+                                                WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                                                ELSE kbd_base.kbd_index_no_pv
+                                            END + 
+                                            CASE
+                                                WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                                                ELSE kbd_base.pv_index
+                                            END DESC) AS year_ranking
+                                       FROM ( SELECT kbd_calculations_table.store_id, pgdate_part('mon'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "month", pgdate_part('qtr'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS quarter, pgdate_part('y'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "year", kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.compliance * kbd_calculations_table.pv_weight AS pv_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight AS psku_index, kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight AS oc_index, kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS bc_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight + kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight + kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS kbd_index_no_pv, pg_catalog.row_number()
+                                              OVER( 
+                                              PARTITION BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand
+                                              ORDER BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id) AS row_number_kbd_base
+                                               FROM procter_and_gamble_es_pharma.kbd_calculations_table) kbd_base) kbd_base_with_ranking
+                              WHERE kbd_base_with_ranking.year_ranking = 1
+                              GROUP BY kbd_base_with_ranking.uid_year) kbd_base_with_min_visit_date_year ON kbd_base_with_ranking.uid_year = kbd_base_with_min_visit_date_year.uid_year AND kbd_base_with_ranking.visit_date_key::character varying::text = kbd_base_with_min_visit_date_year.mindate AND kbd_base_with_ranking.row_number_kbd_base = kbd_base_with_min_visit_date_year.minrow_number_kbd_base
+                 WHERE kbd_base_with_ranking.year_ranking = 1) kbd_base_year
+              WHERE kbd_base_year.visit_uid_year = kbd_base_with_ranking.visit_uid_year)) THEN 'YES'::character varying
+            ELSE 'NO'::character varying
+        END AS best_in_year
+   FROM ( SELECT kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base."month", kbd_base.visit_id, kbd_base.seg1, kbd_base.brand, (kbd_base.visit_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text AS uid, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS visit_uid_month, (((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS visit_uid_quarter, ((kbd_base.visit_id::character varying::text || (kbd_base.store_id::character varying::text || kbd_base.seg1::text)) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS visit_uid_year, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base."month"::character varying::text AS uid_month, (((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text) || kbd_base.quarter::character varying::text AS uid_quarter, ((kbd_base.store_id::character varying::text || kbd_base.seg1::text) || kbd_base.brand::text) || kbd_base."year"::character varying::text AS uid_year, kbd_base.visit_date_key, 
+                CASE
+                    WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                    ELSE kbd_base.kbd_index_no_pv
+                END AS kbd_index_no_pv_new, 
+                CASE
+                    WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                    ELSE kbd_base.pv_index
+                END AS pv_index_new, 
+                CASE
+                    WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                    ELSE kbd_base.kbd_index_no_pv
+                END + 
+                CASE
+                    WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                    ELSE kbd_base.pv_index
+                END AS kbd_index, kbd_base.row_number_kbd_base, pg_catalog.row_number()
+          OVER( 
+          PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+          ORDER BY 
+                CASE
+                    WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                    ELSE kbd_base.kbd_index_no_pv
+                END + 
+                CASE
+                    WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                    ELSE kbd_base.pv_index
+                END DESC) AS best_in_month_num, pg_catalog.row_number()
+          OVER( 
+          PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+          ORDER BY 
+                CASE
+                    WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                    ELSE kbd_base.kbd_index_no_pv
+                END + 
+                CASE
+                    WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                    ELSE kbd_base.pv_index
+                END DESC) AS best_in_quarter_num, pg_catalog.row_number()
+          OVER( 
+          PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+          ORDER BY 
+                CASE
+                    WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                    ELSE kbd_base.kbd_index_no_pv
+                END + 
+                CASE
+                    WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                    ELSE kbd_base.pv_index
+                END DESC) AS best_in_year_num, pg_catalog.rank()
+          OVER( 
+          PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base."month", kbd_base.seg1, kbd_base.brand
+          ORDER BY 
+                CASE
+                    WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                    ELSE kbd_base.kbd_index_no_pv
+                END + 
+                CASE
+                    WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                    ELSE kbd_base.pv_index
+                END DESC) AS month_ranking, pg_catalog.rank()
+          OVER( 
+          PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.quarter, kbd_base.seg1, kbd_base.brand
+          ORDER BY 
+                CASE
+                    WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                    ELSE kbd_base.kbd_index_no_pv
+                END + 
+                CASE
+                    WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                    ELSE kbd_base.pv_index
+                END DESC) AS quarter_ranking, pg_catalog.rank()
+          OVER( 
+          PARTITION BY kbd_base.store_id, kbd_base."year", kbd_base.seg1, kbd_base.brand
+          ORDER BY 
+                CASE
+                    WHEN kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+                    ELSE kbd_base.kbd_index_no_pv
+                END + 
+                CASE
+                    WHEN kbd_base.pv_index IS NULL THEN 0::double precision
+                    ELSE kbd_base.pv_index
+                END DESC) AS year_ranking
+           FROM ( SELECT kbd_calculations_table.store_id, pgdate_part('mon'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "month", pgdate_part('qtr'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS quarter, pgdate_part('y'::character varying::text, date(kbd_calculations_table.visit_date_key)::timestamp without time zone) AS "year", kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.compliance * kbd_calculations_table.pv_weight AS pv_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight AS psku_index, kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight AS oc_index, kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS bc_index, (kbd_calculations_table.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations_table.present_count + kbd_calculations_table.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations_table.psku_weight + kbd_calculations_table.sp_compliance::double precision * kbd_calculations_table.sp_weight + kbd_calculations_table.tf_compliance::double precision * kbd_calculations_table.tf_weight AS kbd_index_no_pv, pg_catalog.row_number()
+                  OVER( 
+                  PARTITION BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand
+                  ORDER BY kbd_calculations_table.store_id, kbd_calculations_table.seg1, kbd_calculations_table.brand, kbd_calculations_table.visit_date_key, kbd_calculations_table.visit_id) AS row_number_kbd_base
+                   FROM procter_and_gamble_es_pharma.kbd_calculations_table) kbd_base) kbd_base_with_ranking;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.best_visits_2022_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.best_visits_2022_table TO plano_auto_export;
+
+
+COMMIT;
