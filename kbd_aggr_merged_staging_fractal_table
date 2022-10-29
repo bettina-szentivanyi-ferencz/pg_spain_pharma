@@ -1,0 +1,53 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.kbd_aggr_merged_staging_fractal_table CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.kbd_aggr_merged_staging_fractal_table
+(
+  store_id,
+  internal_code,
+  visit_id,
+  visit_date_key,
+  categ_name,
+  owner_id,
+  seg1,
+  brand,
+  own_primary_facing,
+  total_primary_facing,
+  own_display_facing,
+  total_display_facing,
+  compliance,
+  psku_target,
+  psku_weight,
+  sod_target,
+  sod_weight,
+  ps_target,
+  ps_weight,
+  sos_target,
+  sos_weight,
+  primary_facing,
+  present_count,
+  oos_count,
+  display_facing,
+  bc_weight,
+  oc_weight,
+  tzone_weight,
+  bc_target,
+  oc_target,
+  tzone_target,
+  bc_compliance,
+  oc_compliance,
+  tzone_compliance,
+  pv_target,
+  pv_weight
+)
+AS 
+ SELECT a.store_id, sm.internal_code, a.visit_id, a.visit_date_key, a.categ_name, a.owner_id, a.seg1, a.brand, a.own_primary_facing, a.total_primary_facing, a.own_display_facing, a.total_display_facing, a.compliance, a.psku_target, a.psku_weight, a.sod_target, a.sod_weight, a.ps_target, a.ps_weight, a.sos_target, a.sos_weight, a.primary_facing, a.present_count, a.oos_count, a.display_facing, b.bc_weight, b.oc_weight, b.tzone_weight, b.bc_target, b.oc_target, b.tzone_target, b.bc_compliance, b.oc_compliance, b.tzone_compliance, a.pv_target, a.pv_weight
+   FROM procter_and_gamble_es_pharma.kbd_calculations_staging_table a
+   LEFT JOIN procter_and_gamble_es_pharma.allbrands_aggregations_final_staging b ON a.visit_id = b.visit_id AND a.seg1::text = b.seg1::text AND a.brand::text = b.brand::text
+   JOIN procter_and_gamble_es_pharma.store_master sm ON a.store_id = sm.store_id;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.kbd_aggr_merged_staging_fractal_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.kbd_aggr_merged_staging_fractal_table TO plano_auto_export;
+
+
+COMMIT;
