@@ -1,0 +1,114 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance_fractal_table CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance_fractal_table
+(
+  visit_id,
+  visit_date_key,
+  store_id,
+  owner_id,
+  base,
+  brand,
+  segment,
+  tzone_compliance,
+  oc_compliance,
+  sp_compliance,
+  compliance,
+  fa_compliance,
+  bc_compliance
+)
+AS 
+ SELECT cte_perfect_shelf_compliance_weighted_with_visibility_points.visit_id, cte_perfect_shelf_compliance_weighted_with_visibility_points.visit_date_key, cte_perfect_shelf_compliance_weighted_with_visibility_points.store_id, cte_perfect_shelf_compliance_weighted_with_visibility_points.owner_id, cte_perfect_shelf_compliance_weighted_with_visibility_points.base, cte_perfect_shelf_compliance_weighted_with_visibility_points.brand, cte_perfect_shelf_compliance_weighted_with_visibility_points.segment, 
+        CASE
+            WHEN (cte_perfect_shelf_compliance_weighted_with_visibility_points.segment::text = ANY (ARRAY['POC'::text, 'Toothpastes'::text, 'Denture Adhesives'::text, 'Calm&Sleep'::text, 'Vitamine D'::text, 'Vitamine C'::text, 'Multivitaminics'::text, 'Pregnancy'::text, 'MSR'::text, 'Nasal Deco'::text, 'Rubs'::text])) AND cte_perfect_shelf_compliance_weighted_with_visibility_points.tzone_compliance IS NULL THEN 0::double precision
+            WHEN (cte_perfect_shelf_compliance_weighted_with_visibility_points.segment::text = ANY (ARRAY['POC'::text, 'Toothpastes'::text, 'Denture Adhesives'::text, 'Calm&Sleep'::text, 'Vitamine D'::text, 'Vitamine C'::text, 'Multivitaminics'::text, 'Pregnancy'::text, 'MSR'::text, 'Nasal Deco'::text, 'Rubs'::text])) AND cte_perfect_shelf_compliance_weighted_with_visibility_points.tzone_compliance IS NOT NULL THEN sum(cte_perfect_shelf_compliance_weighted_with_visibility_points.tzone_compliance::double precision) * 1.0::double precision
+            ELSE NULL::smallint::double precision
+        END AS tzone_compliance, 
+        CASE
+            WHEN (cte_perfect_shelf_compliance_weighted_with_visibility_points.segment::text = ANY (ARRAY['POC'::text, 'Toothpastes'::text, 'Denture Adhesives'::text, 'Calm&Sleep'::text, 'Vitamine D'::text, 'Vitamine C'::text, 'Multivitaminics'::text, 'Pregnancy'::text, 'MSR'::text, 'Nasal Deco'::text, 'Rubs'::text])) AND cte_perfect_shelf_compliance_weighted_with_visibility_points.oc_compliance IS NULL THEN 0::double precision
+            WHEN (cte_perfect_shelf_compliance_weighted_with_visibility_points.segment::text = ANY (ARRAY['POC'::text, 'Toothpastes'::text, 'Denture Adhesives'::text, 'Calm&Sleep'::text, 'Vitamine D'::text, 'Vitamine C'::text, 'Multivitaminics'::text, 'Pregnancy'::text, 'MSR'::text, 'Nasal Deco'::text, 'Rubs'::text])) AND cte_perfect_shelf_compliance_weighted_with_visibility_points.oc_compliance IS NOT NULL THEN sum(cte_perfect_shelf_compliance_weighted_with_visibility_points.oc_compliance::double precision) * 1.0::double precision
+            ELSE NULL::smallint::double precision
+        END AS oc_compliance, 
+        CASE
+            WHEN cte_perfect_shelf_compliance_weighted_with_visibility_points.segment::text = ANY (ARRAY['POC'::text, 'Toothpastes'::text, 'Denture Adhesives'::text, 'Calm&Sleep'::text, 'Vitamine D'::text, 'Vitamine C'::text, 'Multivitaminics'::text, 'Pregnancy'::text, 'MSR'::text, 'Nasal Deco'::text, 'Rubs'::text]) THEN sum(COALESCE(cte_perfect_shelf_compliance_weighted_with_visibility_points.oc_compliance::double precision, 0::double precision) + COALESCE(cte_perfect_shelf_compliance_weighted_with_visibility_points.tzone_compliance::double precision, 0::double precision))
+            ELSE NULL::smallint::double precision
+        END AS sp_compliance, cte_perfect_shelf_compliance_weighted_with_visibility_points.compliance, 
+        CASE
+            WHEN cte_perfect_shelf_compliance_weighted_with_visibility_points.fa_compliance = 0::double precision THEN 0
+            WHEN cte_perfect_shelf_compliance_weighted_with_visibility_points.fa_compliance > 0::double precision THEN 1
+            ELSE NULL::smallint::integer
+        END AS fa_compliance, 
+        CASE
+            WHEN cte_perfect_shelf_compliance_weighted_with_visibility_points.bc_compliance = 0::double precision THEN 0
+            WHEN cte_perfect_shelf_compliance_weighted_with_visibility_points.bc_compliance > 0::double precision THEN 1
+            ELSE NULL::smallint::integer
+        END AS bc_compliance
+   FROM ( SELECT cte_perfect_shelf_compliance_weighted.visit_id, cte_perfect_shelf_compliance_weighted.visit_date_key, cte_perfect_shelf_compliance_weighted.store_id, cte_perfect_shelf_compliance_weighted.owner_id, cte_perfect_shelf_compliance_weighted.categ_name AS base, cte_perfect_shelf_compliance_weighted.brand, cte_perfect_shelf_compliance_weighted.segment, visibility_points_compliance.tzone_compliance, visibility_points_compliance.oc_compliance, sum(cte_perfect_shelf_compliance_weighted.compliance) * 1.0::double precision AS compliance, 
+                CASE
+                    WHEN cte_perfect_shelf_compliance_weighted.segment::text = 'POC'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Toothpastes'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Denture Adhesives'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Calm&Sleep'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Vitamine D'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Vitamine C'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Multivitaminics'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Diagnostics'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Pregnancy'::character varying::text THEN sum(cte_perfect_shelf_compliance_weighted.fa_compliance) * 1.0::double precision
+                    ELSE NULL::smallint::double precision
+                END AS fa_compliance, 
+                CASE
+                    WHEN cte_perfect_shelf_compliance_weighted.segment::text = 'MSR'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Nasal Deco'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Rubs'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Calm&Sleep'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Vitamine D'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Vitamine C'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Multivitaminics'::character varying::text OR cte_perfect_shelf_compliance_weighted.segment::text = 'Pregnancy'::character varying::text THEN sum(cte_perfect_shelf_compliance_weighted.bc_compliance) * 1.0::double precision
+                    ELSE NULL::smallint::double precision
+                END AS bc_compliance
+           FROM ( SELECT cte_perfect_shelf_compliance.visit_id, cte_perfect_shelf_compliance.visit_date_key, cte_perfect_shelf_compliance.store_id, cte_perfect_shelf_compliance.owner_id, cte_perfect_shelf_compliance.categ_name, cte_perfect_shelf_compliance.brand, cte_perfect_shelf_compliance.segment, cte_perfect_shelf_compliance.display_group, sum(cte_perfect_shelf_compliance.compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision AS compliance, sum(cte_perfect_shelf_compliance.fa_compliance::double precision) * 1.0::double precision AS fa_compliance, sum(cte_perfect_shelf_compliance.bc_compliance::double precision) * 1.0::double precision AS bc_compliance
+                   FROM ( SELECT cte_perfect_shelf_compliance_with_modification.visit_id, cte_perfect_shelf_compliance_with_modification.visit_date_key, cte_perfect_shelf_compliance_with_modification.store_id, cte_perfect_shelf_compliance_with_modification.owner_id, cte_perfect_shelf_compliance_with_modification.categ_name, cte_perfect_shelf_compliance_with_modification.display_group, cte_perfect_shelf_compliance_with_modification.brand, cte_perfect_shelf_compliance_with_modification.segment, "max"(cte_perfect_shelf_compliance_with_modification.compliance) AS compliance, "max"(cte_perfect_shelf_compliance_with_modification.fa_compliance) AS fa_compliance, "max"(cte_perfect_shelf_compliance_with_modification.bc_compliance) AS bc_compliance, perfect_shelf_weight.weight
+                           FROM ( SELECT storechecks_kpi_fact_view.visit_id, storechecks_visit_fact_fiscal_year.visit_date_key, storechecks_visit_fact_fiscal_year.fiscal_year_id, storechecks_visit_fact_fiscal_year.store_id, storechecks_visit_fact_fiscal_year.owner_id, storechecks_visit_fact_fiscal_year.categ_name, 
+                                        CASE
+                                            WHEN round(((length(storechecks_kpi_fact_view.display_group::text) - length("replace"(storechecks_kpi_fact_view.display_group::text, ' - '::character varying::text, ''::character varying::text))) / length(' - '::character varying::text))::double precision) = 2::double precision THEN "substring"(storechecks_kpi_fact_view.display_group::text, 0, length(storechecks_kpi_fact_view.display_group::text) - "position"(reverse(storechecks_kpi_fact_view.display_group::text), ' - '::character varying::text))::character varying
+                                            ELSE storechecks_kpi_fact_view.display_group
+                                        END AS display_group, split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 1)::character varying AS brand, split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 2)::character varying AS segment, 
+                                        CASE
+                                            WHEN (count(
+                                            CASE
+                                                WHEN storechecks_kpi_fact_view.compliant = true THEN 1
+                                                ELSE NULL::integer
+                                            END)::numeric::numeric(18,0) * 1.0 / count(
+                                            CASE
+                                                WHEN storechecks_kpi_fact_view.compliant = false OR storechecks_kpi_fact_view.compliant = true OR storechecks_kpi_fact_view.compliant IS NULL THEN 1
+                                                ELSE NULL::integer
+                                            END)::numeric::numeric(18,0) * 1.0) > 0::numeric::numeric(18,0) THEN 1
+                                            ELSE 0
+                                        END AS compliance, 
+                                        CASE
+                                            WHEN (count(
+                                            CASE
+                                                WHEN storechecks_kpi_fact_view.compliant = true AND storechecks_kpi_fact_view.photo_group_type::text = 'Lineal libre acceso'::character varying::text THEN 1
+                                                WHEN storechecks_kpi_fact_view.compliant = true AND (storechecks_kpi_fact_view.photo_group_type::text = 'Lineal'::character varying::text OR storechecks_kpi_fact_view.photo_group_type::text = ''::character varying::text) AND (split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 1)::character varying::text <> 'Ilvico'::character varying::text OR split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 1)::character varying::text <> 'Vicks'::character varying::text) THEN 1
+                                                ELSE NULL::integer
+                                            END)::numeric::numeric(18,0) * 1.0 / count(
+                                            CASE
+                                                WHEN storechecks_kpi_fact_view.compliant = false OR storechecks_kpi_fact_view.compliant = true OR storechecks_kpi_fact_view.compliant IS NULL THEN 1
+                                                ELSE NULL::integer
+                                            END)::numeric::numeric(18,0) * 1.0) > 0::numeric::numeric(18,0) THEN 1
+                                            ELSE 0
+                                        END AS fa_compliance, 
+                                        CASE
+                                            WHEN (count(
+                                            CASE
+                                                WHEN storechecks_kpi_fact_view.compliant = true AND storechecks_kpi_fact_view.photo_group_type::text = 'Lineal detrás del mostrador'::character varying::text THEN 1
+                                                WHEN storechecks_kpi_fact_view.compliant = true AND (storechecks_kpi_fact_view.photo_group_type::text = 'Lineal'::character varying::text OR storechecks_kpi_fact_view.photo_group_type::text = ''::character varying::text) AND (split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 1)::character varying::text = 'Ilvico'::character varying::text OR split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 1)::character varying::text = 'Vicks'::character varying::text) THEN 1
+                                                ELSE NULL::integer
+                                            END)::numeric::numeric(18,0) * 1.0 / count(
+                                            CASE
+                                                WHEN storechecks_kpi_fact_view.compliant = false OR storechecks_kpi_fact_view.compliant = true OR storechecks_kpi_fact_view.compliant IS NULL THEN 1
+                                                ELSE NULL::integer
+                                            END)::numeric::numeric(18,0) * 1.0) > 0::numeric::numeric(18,0) THEN 1
+                                            ELSE 0
+                                        END AS bc_compliance
+                                   FROM procter_and_gamble_es_pharma.storechecks_kpi_fact_view storechecks_kpi_fact_view, procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year
+                                  WHERE storechecks_kpi_fact_view.visit_id = storechecks_visit_fact_fiscal_year.visit_id AND storechecks_kpi_fact_view.kpi_group1::text <> ''::character varying::text AND split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 2) <> ''::character varying::text AND (storechecks_kpi_fact_view.kpi_group1::text || storechecks_kpi_fact_view.display_group::text) <> 'Oral B - POCOral B - Permanent Display'::character varying::text
+                                  GROUP BY storechecks_kpi_fact_view.visit_id, storechecks_visit_fact_fiscal_year.visit_date_key, storechecks_visit_fact_fiscal_year.fiscal_year_id, storechecks_visit_fact_fiscal_year.store_id, storechecks_visit_fact_fiscal_year.owner_id, storechecks_visit_fact_fiscal_year.categ_name, storechecks_kpi_fact_view.display_group, storechecks_kpi_fact_view.kpi_group1) cte_perfect_shelf_compliance_with_modification, procter_and_gamble_es_pharma.perfect_shelf_weight perfect_shelf_weight
+                          WHERE cte_perfect_shelf_compliance_with_modification.brand::text = perfect_shelf_weight.brand::text AND cte_perfect_shelf_compliance_with_modification.segment::text = perfect_shelf_weight.segment::text AND cte_perfect_shelf_compliance_with_modification.display_group::text = perfect_shelf_weight.perfect_shelf_kpi::text AND cte_perfect_shelf_compliance_with_modification.fiscal_year_id::text = perfect_shelf_weight.fiscal_year_id::text
+                          GROUP BY cte_perfect_shelf_compliance_with_modification.visit_id, cte_perfect_shelf_compliance_with_modification.visit_date_key, cte_perfect_shelf_compliance_with_modification.store_id, cte_perfect_shelf_compliance_with_modification.owner_id, cte_perfect_shelf_compliance_with_modification.categ_name, cte_perfect_shelf_compliance_with_modification.display_group, cte_perfect_shelf_compliance_with_modification.brand, cte_perfect_shelf_compliance_with_modification.segment, perfect_shelf_weight.weight) cte_perfect_shelf_compliance
+                  GROUP BY cte_perfect_shelf_compliance.visit_id, cte_perfect_shelf_compliance.visit_date_key, cte_perfect_shelf_compliance.store_id, cte_perfect_shelf_compliance.owner_id, cte_perfect_shelf_compliance.categ_name, cte_perfect_shelf_compliance.brand, cte_perfect_shelf_compliance.segment, cte_perfect_shelf_compliance.display_group) cte_perfect_shelf_compliance_weighted
+      LEFT JOIN procter_and_gamble_es_pharma.visibility_points_compliance ON visibility_points_compliance.visit_id = cte_perfect_shelf_compliance_weighted.visit_id AND visibility_points_compliance.segment::text = cte_perfect_shelf_compliance_weighted.segment::text AND visibility_points_compliance.brand::text = cte_perfect_shelf_compliance_weighted.brand::text AND visibility_points_compliance.base::text = cte_perfect_shelf_compliance_weighted.categ_name::text
+     GROUP BY cte_perfect_shelf_compliance_weighted.visit_id, cte_perfect_shelf_compliance_weighted.visit_date_key, cte_perfect_shelf_compliance_weighted.store_id, cte_perfect_shelf_compliance_weighted.owner_id, cte_perfect_shelf_compliance_weighted.categ_name, cte_perfect_shelf_compliance_weighted.brand, cte_perfect_shelf_compliance_weighted.segment, visibility_points_compliance.tzone_compliance, visibility_points_compliance.oc_compliance) cte_perfect_shelf_compliance_weighted_with_visibility_points
+  GROUP BY cte_perfect_shelf_compliance_weighted_with_visibility_points.visit_id, cte_perfect_shelf_compliance_weighted_with_visibility_points.visit_date_key, cte_perfect_shelf_compliance_weighted_with_visibility_points.store_id, cte_perfect_shelf_compliance_weighted_with_visibility_points.owner_id, cte_perfect_shelf_compliance_weighted_with_visibility_points.base, cte_perfect_shelf_compliance_weighted_with_visibility_points.brand, cte_perfect_shelf_compliance_weighted_with_visibility_points.segment, cte_perfect_shelf_compliance_weighted_with_visibility_points.tzone_compliance, cte_perfect_shelf_compliance_weighted_with_visibility_points.oc_compliance, cte_perfect_shelf_compliance_weighted_with_visibility_points.compliance, cte_perfect_shelf_compliance_weighted_with_visibility_points.fa_compliance, cte_perfect_shelf_compliance_weighted_with_visibility_points.bc_compliance;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance_fractal_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance_fractal_table TO plano_auto_export;
+
+
+COMMIT;
