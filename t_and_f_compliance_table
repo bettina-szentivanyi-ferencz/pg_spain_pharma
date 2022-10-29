@@ -1,0 +1,50 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.t_and_f_compliance_table CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.t_and_f_compliance_table
+(
+  visit_id,
+  visit_date_key,
+  owner_id,
+  store_id,
+  base,
+  segment,
+  brand,
+  tf_compliance
+)
+AS 
+ SELECT cte_t_and_f_presence.visit_id, cte_t_and_f_presence.visit_date_key, cte_t_and_f_presence.owner_id, cte_t_and_f_presence.store_id, cte_t_and_f_presence.base, cte_t_and_f_presence.segment, cte_t_and_f_presence.brand, 
+        CASE
+            WHEN cte_t_and_f_presence.touch_and_feel_point >= 1 AND cte_t_and_f_presence.brand::text = 'Oral B'::character varying::text THEN 1
+            WHEN cte_t_and_f_presence.brand::text <> 'Oral B'::character varying::text THEN NULL::smallint::integer
+            ELSE 0
+        END AS tf_compliance
+   FROM ( SELECT storechecks_visit_fact_fiscal_year.visit_id, storechecks_visit_fact_fiscal_year.visit_date_key, storechecks_visit_fact_fiscal_year.owner_id, storechecks_visit_fact_fiscal_year.store_id, product_master.base, 
+                CASE
+                    WHEN storechecks_planogram_fact.product_id::character varying::text = '5c41b1059a99110001cf4e49'::character varying::text OR storechecks_planogram_fact.product_id::character varying::text = '5c9a083eaeb4cc0001e03bcf'::character varying::text THEN 'POC'::character varying
+                    ELSE product_master.seg1
+                END AS segment, product_master.brand, sum(
+                CASE
+                    WHEN storechecks_planogram_fact.product_id::character varying::text = '5c41b1059a99110001cf4e49'::character varying::text OR storechecks_planogram_fact.product_id::character varying::text = '5c9a083eaeb4cc0001e03bcf'::character varying::text THEN storechecks_planogram_fact.facings
+                    ELSE NULL::smallint
+                END) AS touch_and_feel_point
+           FROM procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact, procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year, procter_and_gamble_es_pharma.product_master product_master
+          WHERE storechecks_planogram_fact.visit_id = storechecks_visit_fact_fiscal_year.visit_id AND storechecks_planogram_fact.product_id = product_master.product_id
+          GROUP BY storechecks_visit_fact_fiscal_year.visit_id, storechecks_visit_fact_fiscal_year.visit_date_key, storechecks_visit_fact_fiscal_year.owner_id, storechecks_visit_fact_fiscal_year.store_id, product_master.base, 
+                CASE
+                    WHEN storechecks_planogram_fact.product_id::character varying::text = '5c41b1059a99110001cf4e49'::character varying::text OR storechecks_planogram_fact.product_id::character varying::text = '5c9a083eaeb4cc0001e03bcf'::character varying::text THEN 'POC'::character varying
+                    ELSE product_master.seg1
+                END, product_master.brand) cte_t_and_f_presence
+  GROUP BY cte_t_and_f_presence.visit_id, cte_t_and_f_presence.visit_date_key, cte_t_and_f_presence.owner_id, cte_t_and_f_presence.store_id, cte_t_and_f_presence.base, cte_t_and_f_presence.segment, cte_t_and_f_presence.brand, 
+        CASE
+            WHEN cte_t_and_f_presence.touch_and_feel_point >= 1 AND cte_t_and_f_presence.brand::text = 'Oral B'::character varying::text THEN 1
+            WHEN cte_t_and_f_presence.brand::text <> 'Oral B'::character varying::text THEN NULL::smallint::integer
+            ELSE 0
+        END;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.t_and_f_compliance_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.t_and_f_compliance_table TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.t_and_f_compliance_table TO pg_es_pharma;
+
+
+COMMIT;
