@@ -1,0 +1,38 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.category_compliance_table CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.category_compliance_table
+(
+  store_id,
+  visit_date_key,
+  categ_name,
+  category_compliance
+)
+AS 
+ SELECT cte_count_own_brand_per_category.store_id, cte_count_own_brand_per_category.visit_date_key, cte_count_own_brand_per_category.categ_name, 
+        CASE
+            WHEN cte_count_own_brand_per_category.categ_name::text = 'Cuidado Oral - Oral Care'::character varying::text AND cte_count_own_brand_per_category.count_own_brand > 0 OR cte_count_own_brand_per_category.categ_name::text = 'Diagnóstico - Pregnancy'::character varying::text AND cte_count_own_brand_per_category.count_own_brand > 0 OR cte_count_own_brand_per_category.categ_name::text = 'Respiratorio - Cough & Cold'::character varying::text AND cte_count_own_brand_per_category.count_own_brand > 0 OR cte_count_own_brand_per_category.categ_name::text = 'Vitaminas - Vitamins'::character varying::text AND cte_count_own_brand_per_category.count_own_brand > 0 OR cte_count_own_brand_per_category.categ_name::text = 'Cuidado Bebé - Baby Care'::character varying::text AND cte_count_own_brand_per_category.count_own_brand > 0 THEN 1
+            ELSE 0
+        END AS category_compliance
+   FROM ( SELECT cte_visit_product_dim.store_id, cte_visit_product_dim.visit_date_key, cte_visit_product_dim.categ_name, count(DISTINCT 
+                CASE
+                    WHEN product_facing_fact.own_primary_shelf_facing IS NOT NULL THEN cte_visit_product_dim.brand
+                    ELSE NULL::character varying
+                END) AS count_own_brand
+           FROM ( SELECT DISTINCT storechecks_visit_fact_fiscal_year.visit_id, storechecks_visit_fact_fiscal_year.visit_date_key, storechecks_visit_fact_fiscal_year.fiscal_year_id, storechecks_visit_fact_fiscal_year.store_id, storechecks_visit_fact_fiscal_year.owner_id, storechecks_visit_fact_fiscal_year.categ_name, product_master.seg1, product_master.brand, product_master.brand::text || storechecks_visit_fact_fiscal_year.fiscal_year_id::text AS brand_sales_id
+                   FROM procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year, procter_and_gamble_es_pharma.product_master product_master
+                  WHERE storechecks_visit_fact_fiscal_year.categ_name::text = product_master.base::text AND product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text AND product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text AND product_master.desc_j::text <> 'EXCLUDE'::character varying::text) cte_visit_product_dim, procter_and_gamble_es_pharma.product_facing_fact
+          WHERE cte_visit_product_dim.visit_id = product_facing_fact.visit_id
+          GROUP BY cte_visit_product_dim.store_id, cte_visit_product_dim.visit_date_key, cte_visit_product_dim.categ_name) cte_count_own_brand_per_category
+  GROUP BY cte_count_own_brand_per_category.store_id, cte_count_own_brand_per_category.visit_date_key, cte_count_own_brand_per_category.categ_name, 
+        CASE
+            WHEN cte_count_own_brand_per_category.categ_name::text = 'Cuidado Oral - Oral Care'::character varying::text AND cte_count_own_brand_per_category.count_own_brand > 0 OR cte_count_own_brand_per_category.categ_name::text = 'Diagnóstico - Pregnancy'::character varying::text AND cte_count_own_brand_per_category.count_own_brand > 0 OR cte_count_own_brand_per_category.categ_name::text = 'Respiratorio - Cough & Cold'::character varying::text AND cte_count_own_brand_per_category.count_own_brand > 0 OR cte_count_own_brand_per_category.categ_name::text = 'Vitaminas - Vitamins'::character varying::text AND cte_count_own_brand_per_category.count_own_brand > 0 OR cte_count_own_brand_per_category.categ_name::text = 'Cuidado Bebé - Baby Care'::character varying::text AND cte_count_own_brand_per_category.count_own_brand > 0 THEN 1
+            ELSE 0
+        END;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.category_compliance_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.category_compliance_table TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.category_compliance_table TO pg_es_pharma;
+
+
+COMMIT;
