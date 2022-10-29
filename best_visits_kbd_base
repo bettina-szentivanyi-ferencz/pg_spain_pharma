@@ -1,0 +1,38 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.best_visits_kbd_base CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.best_visits_kbd_base
+(
+  store_id,
+  month,
+  quarter,
+  year,
+  visit_date_key,
+  visit_id,
+  seg1,
+  brand,
+  pv_index,
+  psku_index,
+  oc_index,
+  bc_index,
+  kbd_index_no_pv,
+  row_number_kbd_base
+)
+AS 
+ SELECT kbd_base_0.store_id, kbd_base_0."month", kbd_base_0.quarter, kbd_base_0."year", kbd_base_0.visit_date_key, kbd_base_0.visit_id, kbd_base_0.seg1, kbd_base_0.brand, kbd_base_0.pv_index, kbd_base_0.psku_index, kbd_base_0.oc_index, kbd_base_0.bc_index, COALESCE(sum(kbd_base_0.psku_index), 0::double precision) + COALESCE(sum(kbd_base_0.oc_index), 0::double precision) + COALESCE(sum(kbd_base_0.bc_index), 0::double precision) AS kbd_index_no_pv, pg_catalog.row_number()
+  OVER( 
+  PARTITION BY kbd_base_0.store_id, kbd_base_0.seg1, kbd_base_0.brand
+  ORDER BY kbd_base_0.store_id, kbd_base_0.seg1, kbd_base_0.brand, kbd_base_0.visit_date_key, kbd_base_0.visit_id) AS row_number_kbd_base
+   FROM ( SELECT kbd_calculations.store_id, pgdate_part('mon'::character varying::text, date(kbd_calculations.visit_date_key)::timestamp without time zone) AS "month", pgdate_part('qtr'::character varying::text, date(kbd_calculations.visit_date_key)::timestamp without time zone) AS quarter, pgdate_part('y'::character varying::text, date(kbd_calculations.visit_date_key)::timestamp without time zone) AS "year", kbd_calculations.visit_date_key, kbd_calculations.visit_id, kbd_calculations.seg1, kbd_calculations.brand, kbd_calculations.compliance * kbd_calculations.pv_weight AS pv_index, (kbd_calculations.present_count::numeric::numeric(18,0) * 1.0 / (kbd_calculations.present_count + kbd_calculations.oos_count)::numeric::numeric(18,0) * 1.0)::double precision * kbd_calculations.psku_weight AS psku_index, kbd_calculations.sp_compliance::double precision * kbd_calculations.sp_weight AS oc_index, kbd_calculations.tf_compliance::double precision * kbd_calculations.tf_weight AS bc_index, pg_catalog.row_number()
+          OVER( 
+          PARTITION BY kbd_calculations.store_id, kbd_calculations.seg1, kbd_calculations.brand
+          ORDER BY kbd_calculations.store_id, kbd_calculations.seg1, kbd_calculations.brand, kbd_calculations.visit_date_key, kbd_calculations.visit_id) AS row_number_kbd_base
+           FROM procter_and_gamble_es_pharma.kbd_calculations) kbd_base_0
+  GROUP BY kbd_base_0.store_id, kbd_base_0."month", kbd_base_0.quarter, kbd_base_0."year", kbd_base_0.visit_date_key, kbd_base_0.visit_id, kbd_base_0.seg1, kbd_base_0.brand, kbd_base_0.pv_index, kbd_base_0.psku_index, kbd_base_0.oc_index, kbd_base_0.bc_index;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.best_visits_kbd_base TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.best_visits_kbd_base TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.best_visits_kbd_base TO pg_es_pharma;
+
+
+COMMIT;
