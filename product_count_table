@@ -1,0 +1,54 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.product_count_table CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.product_count_table
+(
+  visit_id,
+  seg1,
+  brand,
+  present_count,
+  oos_count
+)
+AS 
+ SELECT storechecks_product_fact.visit_id, product_master.seg1, product_master.brand, count(
+        CASE
+            WHEN storechecks_product_fact.out_of_stock = 0 THEN storechecks_product_fact.product_id
+            ELSE NULL::bpchar
+        END) AS present_count, count(
+        CASE
+            WHEN storechecks_product_fact.out_of_stock = 1 THEN storechecks_product_fact.product_id
+            ELSE NULL::bpchar
+        END) AS oos_count
+   FROM procter_and_gamble_es_pharma.storechecks_product_fact storechecks_product_fact
+   JOIN procter_and_gamble_es_pharma.product_master product_master ON storechecks_product_fact.product_id = product_master.product_id
+   JOIN procter_and_gamble_es_pharma.storechecks_visit_fact storechecks_visit_fact ON storechecks_product_fact.visit_id = storechecks_visit_fact.visit_id AND storechecks_visit_fact.visit_date_key < '2021-10-01'::bpchar
+  WHERE storechecks_product_fact.analysis::text = 'all_top_sku'::character varying::text
+  GROUP BY storechecks_product_fact.visit_id, product_master.seg1, product_master.brand
+UNION 
+ SELECT prod_groups.visit_id, product_master.seg1, product_master.brand, count(
+        CASE
+            WHEN prod_groups.compliant = 1 THEN prod_groups.product_id::bpchar
+            ELSE NULL::bpchar
+        END) AS present_count, count(
+        CASE
+            WHEN prod_groups.compliant = 0 THEN prod_groups.product_id::bpchar
+            ELSE NULL::bpchar
+        END) AS oos_count
+   FROM ( SELECT storechecks_kpi_fact_view.visit_id, storechecks_kpi_fact_view.display_group, storechecks_kpi_fact_view.product_group_name, "max"(storechecks_kpi_fact_view.product_id::text) AS product_id, "max"(
+                CASE
+                    WHEN storechecks_kpi_fact_view.compliant = true THEN 1
+                    ELSE 0
+                END) AS compliant
+           FROM procter_and_gamble_es_pharma.storechecks_kpi_fact_view storechecks_kpi_fact_view
+      JOIN procter_and_gamble_es_pharma.storechecks_visit_fact storechecks_visit_fact ON storechecks_kpi_fact_view.visit_id = storechecks_visit_fact.visit_id
+     WHERE storechecks_visit_fact.visit_date_key >= '2021-10-01'::bpchar AND storechecks_kpi_fact_view.display_group::text ~~ '%Visible p-sku distribution%'::character varying::text AND storechecks_kpi_fact_view.product_id::text <> ''::character varying::text
+     GROUP BY storechecks_kpi_fact_view.visit_id, storechecks_kpi_fact_view.display_group, storechecks_kpi_fact_view.product_group_name) prod_groups
+   JOIN procter_and_gamble_es_pharma.product_master product_master ON prod_groups.product_id = product_master.product_id::character varying::text
+  GROUP BY prod_groups.visit_id, product_master.seg1, product_master.brand;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.product_count_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.product_count_table TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.product_count_table TO pg_es_pharma;
+
+
+COMMIT;
