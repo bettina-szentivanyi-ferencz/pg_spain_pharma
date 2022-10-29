@@ -1,0 +1,69 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.best_visits_2022_table_2 CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.best_visits_2022_table_2
+(
+  store_id,
+  year,
+  quarter,
+  month,
+  visit_date_key,
+  visit_id,
+  seg1,
+  brand,
+  uid,
+  kbd_index_no_pv_new,
+  pv_index_new,
+  kbd_index,
+  best_in_month_num,
+  best_in_quarter_num,
+  best_in_year_num,
+  best_in_month,
+  best_in_quarter,
+  best_in_year
+)
+AS 
+ SELECT kbd_base_with_ranking.store_id, kbd_base_with_ranking."year", kbd_base_with_ranking.quarter, kbd_base_with_ranking."month", kbd_base_with_ranking.visit_date_key, kbd_base_with_ranking.visit_id, kbd_base_with_ranking.seg1, kbd_base_with_ranking.brand, kbd_base_with_ranking.uid, kbd_base_with_ranking.kbd_index_no_pv_new, kbd_base_with_ranking.pv_index_new, kbd_base_with_ranking.kbd_index, kbd_base_with_ranking.best_in_month_num, kbd_base_with_ranking.best_in_quarter_num, kbd_base_with_ranking.best_in_year_num, 
+        CASE
+            WHEN (kbd_base_with_ranking.visit_uid_month IN ( SELECT kbd_base_month.visit_uid_month
+               FROM ( SELECT kbd_base_with_ranking.visit_uid_month, kbd_base_with_ranking.uid_month
+                       FROM procter_and_gamble_es_pharma.kbd_base_with_ranking
+                  JOIN ( SELECT kbd_base_with_ranking.uid_month, min(kbd_base_with_ranking.visit_date_key::text) AS mindate, min(kbd_base_with_ranking.row_number_kbd_base) AS minrow_number_kbd_base
+                               FROM procter_and_gamble_es_pharma.kbd_base_with_ranking
+                              WHERE kbd_base_with_ranking.month_ranking = 1
+                              GROUP BY kbd_base_with_ranking.uid_month) kbd_base_with_min_visit_date_month ON kbd_base_with_ranking.uid_month = kbd_base_with_min_visit_date_month.uid_month AND kbd_base_with_ranking.visit_date_key::text = kbd_base_with_min_visit_date_month.mindate AND kbd_base_with_ranking.row_number_kbd_base = kbd_base_with_min_visit_date_month.minrow_number_kbd_base
+                 WHERE kbd_base_with_ranking.month_ranking = 1) kbd_base_month
+              WHERE kbd_base_month.visit_uid_month = kbd_base_with_ranking.visit_uid_month)) THEN 'YES'::character varying
+            ELSE 'NO'::character varying
+        END AS best_in_month, 
+        CASE
+            WHEN (kbd_base_with_ranking.visit_uid_quarter IN ( SELECT kbd_base_quarter.visit_uid_quarter
+               FROM ( SELECT kbd_base_with_ranking.visit_uid_quarter, kbd_base_with_ranking.uid_quarter
+                       FROM procter_and_gamble_es_pharma.kbd_base_with_ranking
+                  JOIN ( SELECT kbd_base_with_ranking.uid_quarter, min(kbd_base_with_ranking.visit_date_key::text) AS mindate, min(kbd_base_with_ranking.row_number_kbd_base) AS minrow_number_kbd_base
+                               FROM procter_and_gamble_es_pharma.kbd_base_with_ranking
+                              WHERE kbd_base_with_ranking.quarter_ranking = 1
+                              GROUP BY kbd_base_with_ranking.uid_quarter) kbd_base_with_min_visit_date_quarter ON kbd_base_with_ranking.uid_quarter = kbd_base_with_min_visit_date_quarter.uid_quarter AND kbd_base_with_ranking.visit_date_key::text = kbd_base_with_min_visit_date_quarter.mindate AND kbd_base_with_ranking.row_number_kbd_base = kbd_base_with_min_visit_date_quarter.minrow_number_kbd_base
+                 WHERE kbd_base_with_ranking.quarter_ranking = 1) kbd_base_quarter
+              WHERE kbd_base_quarter.visit_uid_quarter = kbd_base_with_ranking.visit_uid_quarter)) THEN 'YES'::character varying
+            ELSE 'NO'::character varying
+        END AS best_in_quarter, 
+        CASE
+            WHEN (kbd_base_with_ranking.visit_uid_year IN ( SELECT kbd_base_year.visit_uid_year
+               FROM ( SELECT kbd_base_with_ranking.visit_uid_year, kbd_base_with_ranking.uid_year
+                       FROM procter_and_gamble_es_pharma.kbd_base_with_ranking
+                  JOIN ( SELECT kbd_base_with_ranking.uid_year, min(kbd_base_with_ranking.visit_date_key::text) AS mindate, min(kbd_base_with_ranking.row_number_kbd_base) AS minrow_number_kbd_base
+                               FROM procter_and_gamble_es_pharma.kbd_base_with_ranking
+                              WHERE kbd_base_with_ranking.year_ranking = 1
+                              GROUP BY kbd_base_with_ranking.uid_year) kbd_base_with_min_visit_date_year ON kbd_base_with_ranking.uid_year = kbd_base_with_min_visit_date_year.uid_year AND kbd_base_with_ranking.visit_date_key::text = kbd_base_with_min_visit_date_year.mindate AND kbd_base_with_ranking.row_number_kbd_base = kbd_base_with_min_visit_date_year.minrow_number_kbd_base
+                 WHERE kbd_base_with_ranking.year_ranking = 1) kbd_base_year
+              WHERE kbd_base_year.visit_uid_year = kbd_base_with_ranking.visit_uid_year)) THEN 'YES'::character varying
+            ELSE 'NO'::character varying
+        END AS best_in_year
+   FROM procter_and_gamble_es_pharma.kbd_base_with_ranking;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.best_visits_2022_table_2 TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.best_visits_2022_table_2 TO plano_auto_export;
+
+
+COMMIT;
