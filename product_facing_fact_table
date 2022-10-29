@@ -1,0 +1,42 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.product_facing_fact_table CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.product_facing_fact_table
+(
+  visit_id,
+  base,
+  seg1,
+  brand,
+  own_primary_shelf_facing,
+  own_total_shelf_facing,
+  brand_primary_shelf_facing,
+  brand_total_shelf_facing
+)
+AS 
+ SELECT storechecks_planogram_fact.visit_id, product_master.base, product_master.seg1, product_master.brand, sum(
+        CASE
+            WHEN (storechecks_planogram_fact.photo_group_type::text = 'Lineal'::character varying::text OR storechecks_planogram_fact.photo_group_type::text = 'Lineal libre acceso'::character varying::text OR storechecks_planogram_fact.photo_group_type::text = 'Lineal detrás del mostrador'::character varying::text) AND product_master.desc_j::text = 'INCLUDE'::character varying::text AND storechecks_planogram_fact.own = 1 THEN storechecks_planogram_fact.facings::double precision
+            ELSE NULL::double precision
+        END) AS own_primary_shelf_facing, sum(
+        CASE
+            WHEN storechecks_planogram_fact.photo_group_type::text <> 'Otros'::character varying::text AND product_master.desc_j::text = 'INCLUDE'::character varying::text AND storechecks_planogram_fact.own = 1 THEN storechecks_planogram_fact.facings::double precision
+            ELSE NULL::double precision
+        END) AS own_total_shelf_facing, sum(
+        CASE
+            WHEN (storechecks_planogram_fact.photo_group_type::text = 'Lineal'::character varying::text OR storechecks_planogram_fact.photo_group_type::text = 'Lineal libre acceso'::character varying::text OR storechecks_planogram_fact.photo_group_type::text = 'Lineal detrás del mostrador'::character varying::text) AND product_master.desc_j::text = 'INCLUDE'::character varying::text THEN storechecks_planogram_fact.facings::double precision
+            ELSE NULL::double precision
+        END) AS brand_primary_shelf_facing, sum(
+        CASE
+            WHEN storechecks_planogram_fact.photo_group_type::text <> 'Otros'::character varying::text AND product_master.desc_j::text = 'INCLUDE'::character varying::text THEN storechecks_planogram_fact.facings::double precision
+            ELSE NULL::double precision
+        END) AS brand_total_shelf_facing
+   FROM procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact, procter_and_gamble_es_pharma.product_master product_master
+  WHERE storechecks_planogram_fact.product_id = product_master.product_id
+  GROUP BY storechecks_planogram_fact.visit_id, product_master.base, product_master.seg1, product_master.brand;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.product_facing_fact_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.product_facing_fact_table TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.product_facing_fact_table TO pg_es_pharma;
+
+
+COMMIT;
