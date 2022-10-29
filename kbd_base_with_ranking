@@ -1,0 +1,122 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.kbd_base_with_ranking CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.kbd_base_with_ranking
+(
+  store_id,
+  year,
+  quarter,
+  month,
+  visit_id,
+  seg1,
+  brand,
+  uid,
+  visit_uid_month,
+  visit_uid_quarter,
+  visit_uid_year,
+  uid_month,
+  uid_quarter,
+  uid_year,
+  visit_date_key,
+  kbd_index_no_pv_new,
+  pv_index_new,
+  kbd_index,
+  row_number_kbd_base,
+  best_in_month_num,
+  best_in_quarter_num,
+  best_in_year_num,
+  month_ranking,
+  quarter_ranking,
+  year_ranking
+)
+AS 
+ SELECT best_visits_kbd_base.store_id, best_visits_kbd_base."year", best_visits_kbd_base.quarter, best_visits_kbd_base."month", best_visits_kbd_base.visit_id, best_visits_kbd_base.seg1, best_visits_kbd_base.brand, (best_visits_kbd_base.visit_id::character varying::text || best_visits_kbd_base.seg1::text) || best_visits_kbd_base.brand::text AS uid, (((best_visits_kbd_base.visit_id::text || (best_visits_kbd_base.store_id::character varying::text || best_visits_kbd_base.seg1::text)) || best_visits_kbd_base.brand::text) || best_visits_kbd_base."month"::text) || best_visits_kbd_base."year"::text AS visit_uid_month, (((best_visits_kbd_base.visit_id::text || (best_visits_kbd_base.store_id::character varying::text || best_visits_kbd_base.seg1::text)) || best_visits_kbd_base.brand::text) || best_visits_kbd_base.quarter::text) || best_visits_kbd_base."year"::text AS visit_uid_quarter, ((best_visits_kbd_base.visit_id::text || (best_visits_kbd_base.store_id::character varying::text || best_visits_kbd_base.seg1::text)) || best_visits_kbd_base.brand::text) || best_visits_kbd_base."year"::text AS visit_uid_year, (((best_visits_kbd_base.store_id::character varying::text || best_visits_kbd_base.seg1::text) || best_visits_kbd_base.brand::text) || best_visits_kbd_base."month"::text) || best_visits_kbd_base."year"::text AS uid_month, (((best_visits_kbd_base.store_id::character varying::text || best_visits_kbd_base.seg1::text) || best_visits_kbd_base.brand::text) || best_visits_kbd_base.quarter::text) || best_visits_kbd_base."year"::text AS uid_quarter, ((best_visits_kbd_base.store_id::character varying::text || best_visits_kbd_base.seg1::text) || best_visits_kbd_base.brand::text) || best_visits_kbd_base."year"::text AS uid_year, best_visits_kbd_base.visit_date_key, 
+        CASE
+            WHEN best_visits_kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.kbd_index_no_pv
+        END AS kbd_index_no_pv_new, 
+        CASE
+            WHEN best_visits_kbd_base.pv_index IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.pv_index
+        END AS pv_index_new, 
+        CASE
+            WHEN best_visits_kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.kbd_index_no_pv
+        END + 
+        CASE
+            WHEN best_visits_kbd_base.pv_index IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.pv_index
+        END AS kbd_index, best_visits_kbd_base.row_number_kbd_base, pg_catalog.row_number()
+  OVER( 
+  PARTITION BY best_visits_kbd_base.store_id, best_visits_kbd_base."year", best_visits_kbd_base."month", best_visits_kbd_base.seg1, best_visits_kbd_base.brand
+  ORDER BY 
+        CASE
+            WHEN best_visits_kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.kbd_index_no_pv
+        END + 
+        CASE
+            WHEN best_visits_kbd_base.pv_index IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.pv_index
+        END DESC) AS best_in_month_num, pg_catalog.row_number()
+  OVER( 
+  PARTITION BY best_visits_kbd_base.store_id, best_visits_kbd_base."year", best_visits_kbd_base.quarter, best_visits_kbd_base.seg1, best_visits_kbd_base.brand
+  ORDER BY 
+        CASE
+            WHEN best_visits_kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.kbd_index_no_pv
+        END + 
+        CASE
+            WHEN best_visits_kbd_base.pv_index IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.pv_index
+        END DESC) AS best_in_quarter_num, pg_catalog.row_number()
+  OVER( 
+  PARTITION BY best_visits_kbd_base.store_id, best_visits_kbd_base."year", best_visits_kbd_base.seg1, best_visits_kbd_base.brand
+  ORDER BY 
+        CASE
+            WHEN best_visits_kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.kbd_index_no_pv
+        END + 
+        CASE
+            WHEN best_visits_kbd_base.pv_index IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.pv_index
+        END DESC) AS best_in_year_num, pg_catalog.rank()
+  OVER( 
+  PARTITION BY best_visits_kbd_base.store_id, best_visits_kbd_base."year", best_visits_kbd_base."month", best_visits_kbd_base.seg1, best_visits_kbd_base.brand
+  ORDER BY 
+        CASE
+            WHEN best_visits_kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.kbd_index_no_pv
+        END + 
+        CASE
+            WHEN best_visits_kbd_base.pv_index IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.pv_index
+        END DESC) AS month_ranking, pg_catalog.rank()
+  OVER( 
+  PARTITION BY best_visits_kbd_base.store_id, best_visits_kbd_base."year", best_visits_kbd_base.quarter, best_visits_kbd_base.seg1, best_visits_kbd_base.brand
+  ORDER BY 
+        CASE
+            WHEN best_visits_kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.kbd_index_no_pv
+        END + 
+        CASE
+            WHEN best_visits_kbd_base.pv_index IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.pv_index
+        END DESC) AS quarter_ranking, pg_catalog.rank()
+  OVER( 
+  PARTITION BY best_visits_kbd_base.store_id, best_visits_kbd_base."year", best_visits_kbd_base.seg1, best_visits_kbd_base.brand
+  ORDER BY 
+        CASE
+            WHEN best_visits_kbd_base.kbd_index_no_pv IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.kbd_index_no_pv
+        END + 
+        CASE
+            WHEN best_visits_kbd_base.pv_index IS NULL THEN 0::double precision
+            ELSE best_visits_kbd_base.pv_index
+        END DESC) AS year_ranking
+   FROM procter_and_gamble_es_pharma.best_visits_kbd_base;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.kbd_base_with_ranking TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.kbd_base_with_ranking TO plano_auto_export;
+
+
+COMMIT;
