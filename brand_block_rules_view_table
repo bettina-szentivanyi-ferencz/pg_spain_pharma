@@ -1,0 +1,47 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.brand_block_rules_view_table CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.brand_block_rules_view_table
+(
+  visit_id,
+  visit_date_key,
+  store_id,
+  owner_id,
+  categ_name,
+  brand,
+  segment,
+  display_group,
+  compliance
+)
+AS 
+ SELECT cte_perfect_shelf_compliance.visit_id, cte_perfect_shelf_compliance.visit_date_key, cte_perfect_shelf_compliance.store_id, cte_perfect_shelf_compliance.owner_id, cte_perfect_shelf_compliance.categ_name, cte_perfect_shelf_compliance.brand, cte_perfect_shelf_compliance.segment, cte_perfect_shelf_compliance.display_group, cte_perfect_shelf_compliance.compliance
+   FROM ( SELECT cte_perfect_shelf_compliance_with_modification.visit_id, cte_perfect_shelf_compliance_with_modification.visit_date_key, cte_perfect_shelf_compliance_with_modification.store_id, cte_perfect_shelf_compliance_with_modification.owner_id, cte_perfect_shelf_compliance_with_modification.categ_name, cte_perfect_shelf_compliance_with_modification.display_group, cte_perfect_shelf_compliance_with_modification.brand, cte_perfect_shelf_compliance_with_modification.segment, "max"(cte_perfect_shelf_compliance_with_modification.compliance) AS compliance
+           FROM ( SELECT storechecks_kpi_fact_view.visit_id, storechecks_visit_fact_fiscal_year.visit_date_key, storechecks_visit_fact_fiscal_year.fiscal_year_id, storechecks_visit_fact_fiscal_year.store_id, storechecks_visit_fact_fiscal_year.owner_id, storechecks_visit_fact_fiscal_year.categ_name, 
+                        CASE
+                            WHEN round(((length(storechecks_kpi_fact_view.display_group::text) - length("replace"(storechecks_kpi_fact_view.display_group::text, ' - '::character varying::text, ''::character varying::text))) / length(' - '::character varying::text))::double precision) = 2::double precision THEN "substring"(storechecks_kpi_fact_view.display_group::text, 0, length(storechecks_kpi_fact_view.display_group::text) - "position"(reverse(storechecks_kpi_fact_view.display_group::text), ' - '::character varying::text))::character varying
+                            ELSE storechecks_kpi_fact_view.display_group
+                        END AS display_group, split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 1)::character varying AS brand, split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 2)::character varying AS segment, 
+                        CASE
+                            WHEN (count(
+                            CASE
+                                WHEN storechecks_kpi_fact_view.compliant = true THEN 1
+                                ELSE NULL::integer
+                            END)::numeric::numeric(18,0) * 1.0 / count(
+                            CASE
+                                WHEN storechecks_kpi_fact_view.compliant = false OR storechecks_kpi_fact_view.compliant = true OR storechecks_kpi_fact_view.compliant IS NULL THEN 1
+                                ELSE NULL::integer
+                            END)::numeric::numeric(18,0) * 1.0) > 0::numeric::numeric(18,0) THEN 1
+                            ELSE 0
+                        END AS compliance
+                   FROM procter_and_gamble_es_pharma.storechecks_kpi_fact_view storechecks_kpi_fact_view, procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year
+                  WHERE storechecks_kpi_fact_view.visit_id = storechecks_visit_fact_fiscal_year.visit_id AND storechecks_kpi_fact_view.kpi_group1::text <> ''::character varying::text AND split_part(storechecks_kpi_fact_view.kpi_group1::text, ' - '::character varying::text, 2) <> ''::character varying::text AND (storechecks_kpi_fact_view.kpi_group1::text || storechecks_kpi_fact_view.display_group::text) <> 'Oral B - POCOral B - Permanent Display'::character varying::text
+                  GROUP BY storechecks_kpi_fact_view.visit_id, storechecks_visit_fact_fiscal_year.visit_date_key, storechecks_visit_fact_fiscal_year.fiscal_year_id, storechecks_visit_fact_fiscal_year.store_id, storechecks_visit_fact_fiscal_year.owner_id, storechecks_visit_fact_fiscal_year.categ_name, storechecks_kpi_fact_view.display_group, storechecks_kpi_fact_view.kpi_group1) cte_perfect_shelf_compliance_with_modification, procter_and_gamble_es_pharma.brand_block_rules brand_block_rules
+          WHERE cte_perfect_shelf_compliance_with_modification.brand::text = brand_block_rules.brand::text AND cte_perfect_shelf_compliance_with_modification.segment::text = brand_block_rules.segment::text AND cte_perfect_shelf_compliance_with_modification.display_group::text = brand_block_rules.perfect_shelf_kpi::text AND cte_perfect_shelf_compliance_with_modification.fiscal_year_id::text = brand_block_rules.fiscal_year_id::text
+          GROUP BY cte_perfect_shelf_compliance_with_modification.visit_id, cte_perfect_shelf_compliance_with_modification.visit_date_key, cte_perfect_shelf_compliance_with_modification.store_id, cte_perfect_shelf_compliance_with_modification.owner_id, cte_perfect_shelf_compliance_with_modification.categ_name, cte_perfect_shelf_compliance_with_modification.display_group, cte_perfect_shelf_compliance_with_modification.brand, cte_perfect_shelf_compliance_with_modification.segment) cte_perfect_shelf_compliance
+  GROUP BY cte_perfect_shelf_compliance.visit_id, cte_perfect_shelf_compliance.visit_date_key, cte_perfect_shelf_compliance.store_id, cte_perfect_shelf_compliance.owner_id, cte_perfect_shelf_compliance.categ_name, cte_perfect_shelf_compliance.brand, cte_perfect_shelf_compliance.segment, cte_perfect_shelf_compliance.display_group, cte_perfect_shelf_compliance.compliance;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.brand_block_rules_view_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.brand_block_rules_view_table TO plano_auto_export;
+
+
+COMMIT;
