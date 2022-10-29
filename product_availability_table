@@ -1,0 +1,51 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.product_availability_table CASCADE;
+
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.product_availability_table
+(
+  store_id,
+  owner_id,
+  visit_date_key,
+  visit_id,
+  analysis,
+  product_id,
+  product_ean,
+  own,
+  currnt_stat,
+  value,
+  out_of_stock,
+  ranking,
+  facings_tgt,
+  display_group,
+  seg1,
+  brand,
+  product_group_name
+)
+AS 
+ SELECT a.store_id, a.owner_id, a.visit_date_key, b.visit_id, b.analysis, b.product_id, b.product_ean, b.own, b.currnt_stat, b.value, b.out_of_stock, b.ranking, b.facings_tgt, b.display_group, c.seg1, c.brand, '' AS product_group_name
+   FROM procter_and_gamble_es_pharma.storechecks_visit_fact_view a, procter_and_gamble_es_pharma.storechecks_product_fact b, procter_and_gamble_es_pharma.product_master c
+  WHERE a.visit_id = b.visit_id AND b.product_id = c.product_id AND b.analysis::text = 'all_top_sku'::character varying::text AND a.visit_date_key < '2021-10-01'::bpchar
+UNION 
+ SELECT svf.store_id, svf.owner_id, svf.visit_date_key, svf.visit_id, 'all_top_sku' AS analysis, skf.product_id, pm.product_ean, 1 AS own, 
+        CASE
+            WHEN skf.compliant = true THEN 'present'::character varying
+            ELSE 'oos'::character varying
+        END AS currnt_stat, 
+        CASE
+            WHEN skf.compliant = true THEN 1
+            ELSE 0
+        END AS value, 
+        CASE
+            WHEN skf.compliant = true THEN 0
+            ELSE 1
+        END AS out_of_stock, NULL::"unknown" AS ranking, NULL::"unknown" AS facings_tgt, skf.display_group, pm.seg1, pm.brand, skf.product_group_name
+   FROM procter_and_gamble_es_pharma.storechecks_kpi_fact skf
+   JOIN procter_and_gamble_es_pharma.storechecks_visit_fact svf ON skf.visit_id = svf.visit_id
+   JOIN procter_and_gamble_es_pharma.product_master pm ON skf.product_id::character(256) = pm.product_id
+  WHERE svf.visit_date_key >= '2021-10-01'::bpchar AND skf.display_group::text ~~ '%Visible p-sku distribution%'::character varying::text AND skf.product_id::text <> ''::character varying::text;
+
+
+GRANT SELECT ON procter_and_gamble_es_pharma.product_availability_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.product_availability_table TO plano_auto_export;
+
+
+COMMIT;
