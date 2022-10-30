@@ -238,7 +238,6 @@ select
   and cte_visit_count.internal_code=cte_posm_compliance_with_non_compliant.internal_code
   and cte_visit_count.categ_name=cte_posm_compliance_with_non_compliant.categ_name
   and count_visit_date >= 2
-  and posm_name='NUEVA CASITA PREFILL VICKS FY2122 technical generic'
   order by 
   store_id,
   visit_date_key desc,
