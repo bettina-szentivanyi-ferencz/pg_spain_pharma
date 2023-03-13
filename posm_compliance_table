@@ -1,5 +1,5 @@
-DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_compliance CASCADE;
-CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_compliance AS
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_compliance_table CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_compliance_table AS
 with recursive
 cte_visit_product_dim
 as
@@ -123,9 +123,9 @@ group by
 	posm_type_compliance,
 	posm_name_compliance;
 	
-GRANT SELECT ON procter_and_gamble_es_pharma.posm_compliance TO powerbi_user1;
-GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_compliance TO plano_auto_export;
-GRANT SELECT ON procter_and_gamble_es_pharma.posm_compliance TO pg_es_pharma;
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_compliance_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_compliance_table TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_compliance_table TO pg_es_pharma;
 
 
 COMMIT;
