@@ -1,3 +1,6 @@
+  DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_longevity_table CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_longevity_table  AS 
+
 with recursive
 -- filtering posms which are complaint
 posm_help_table_3
@@ -42,6 +45,10 @@ select
   store_id,
   visit_date_key asc,
   posm_name;
+  
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_longevity_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_longevity_table TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_longevity_table TO pg_es_pharma
   
   
   DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_help_table_2 CASCADE;
