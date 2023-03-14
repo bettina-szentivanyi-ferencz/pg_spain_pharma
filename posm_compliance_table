@@ -83,7 +83,7 @@ select
 	cte_visit_product_dim.visit_id,
 	cte_visit_product_dim.visit_date_key,
 	cte_visit_product_dim.categ_name,
-	kbd_calculations.seg1,
+	kbd_calculations_table.seg1,
 	cte_visit_product_dim.brand,
 	cte_visit_product_dim.brand_sales_id,
 	cte_posm_fact.type_name as posm_type,
@@ -97,9 +97,9 @@ select
 	posm_name_compliance as number_of_posm
 from 
 cte_visit_product_dim cte_visit_product_dim
-left join procter_and_gamble_es_pharma.kbd_calculations kbd_calculations on kbd_calculations.visit_id=cte_visit_product_dim.visit_id
-and kbd_calculations.categ_name=cte_visit_product_dim.categ_name 
-and  kbd_calculations.brand=cte_visit_product_dim.brand
+left join procter_and_gamble_es_pharma.kbd_calculations_table kbd_calculations_table on kbd_calculations_table.visit_id=cte_visit_product_dim.visit_id
+and kbd_calculations_table.categ_name=cte_visit_product_dim.categ_name 
+and  kbd_calculations_table.brand=cte_visit_product_dim.brand
 left join cte_posm_fact cte_posm_fact on cte_posm_fact.visit_id=cte_visit_product_dim.visit_id
 and cte_posm_fact.base=cte_visit_product_dim.categ_name 
 and  cte_posm_fact.brand=cte_visit_product_dim.brand
@@ -115,7 +115,7 @@ group by
 	cte_visit_product_dim.visit_id,
 	cte_visit_product_dim.visit_date_key, 
 	cte_visit_product_dim.categ_name,
-	kbd_calculations.seg1,
+	kbd_calculations_table.seg1,
 	cte_visit_product_dim.brand,
 	cte_visit_product_dim.brand_sales_id,
 	cte_posm_fact.type_name,
