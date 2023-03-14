@@ -1,6 +1,7 @@
-DROP VIEW IF EXISTS procter_and_gamble_es_pharma.kbd_calculations_table CASCADE;
+drop view if exists procter_and_gamble_es_pharma.kbd_calculations_table cascade;
 
-CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.kbd_calculations_table
+create or replace
+view procter_and_gamble_es_pharma.kbd_calculations_table
 (
   store_id,
   internal_code,
@@ -43,31 +44,169 @@ CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.kbd_calculations_table
   tf_target,
   mv_points
 )
-AS 
- SELECT cte_visit_product_dim.store_id, store_master.internal_code, cte_visit_product_dim.visit_id, cte_visit_product_dim.visit_date_key, cte_visit_product_dim.categ_name, cte_visit_product_dim.owner_id, cte_visit_product_dim.seg1, cte_visit_product_dim.brand, cte_visit_product_dim.brand_sales_id, 
-        CASE
-            WHEN category_compliance.category_compliance IS NULL THEN 0
-            ELSE category_compliance.category_compliance
-        END AS category_compliance, store_compliance.store_compliance AS perfect_report_compliance, store_compliance.count_category AS count_primary_category, store_compliance.target_category AS target_primary_category, store_compliance.total_category AS count_category, product_facing_fact.own_primary_shelf_facing, product_facing_fact.own_total_shelf_facing, product_facing_fact.brand_primary_shelf_facing, product_facing_fact.brand_total_shelf_facing, product_facing_fact_segment.total_primary_shelf_facing, product_facing_fact_segment.total_shelf_facing, product_facing_fact_visit.total_primary_shelf_facing_visit, product_facing_fact_visit.total_shelf_facing_visit, product_count.present_count, product_count.oos_count, visibility_score_weight.psku_weight, visibility_score_weight.psku_target, perfect_shelf_rules_weighted_compliance.compliance, visibility_score_weight.pv_weight, visibility_score_weight.pv_target, perfect_shelf_rules_weighted_compliance.fa_compliance, perfect_shelf_rules_weighted_compliance.oc_compliance, perfect_shelf_rules_weighted_compliance.bc_compliance, perfect_shelf_rules_weighted_compliance.tzone_compliance, perfect_shelf_rules_weighted_compliance.sp_compliance, visibility_score_weight.sp_weight, visibility_score_weight.sp_target, t_and_f_compliance.tf_compliance, visibility_score_weight.tf_weight, visibility_score_weight.tf_target, perfect_shelf_rules_weighted_compliance.mv_points
-   FROM ( SELECT DISTINCT storechecks_visit_fact_fiscal_year.visit_id, storechecks_visit_fact_fiscal_year.visit_date_key, storechecks_visit_fact_fiscal_year.fiscal_year_id, storechecks_visit_fact_fiscal_year.store_id, storechecks_visit_fact_fiscal_year.owner_id, storechecks_visit_fact_fiscal_year.categ_name, product_master.seg1, product_master.brand, product_master.brand::text || storechecks_visit_fact_fiscal_year.fiscal_year_id::text AS brand_sales_id
-           FROM procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year, procter_and_gamble_es_pharma.product_master product_master
-          WHERE storechecks_visit_fact_fiscal_year.categ_name::text = product_master.base::text AND product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text AND product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text AND product_master.desc_j::text <> 'EXCLUDE'::character varying::text) cte_visit_product_dim
-   LEFT JOIN procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance perfect_shelf_rules_weighted_compliance ON cte_visit_product_dim.visit_id = perfect_shelf_rules_weighted_compliance.visit_id AND cte_visit_product_dim.seg1::text = perfect_shelf_rules_weighted_compliance.segment::text AND cte_visit_product_dim.brand::text = perfect_shelf_rules_weighted_compliance.brand::text
-   LEFT JOIN procter_and_gamble_es_pharma.visibility_score_weight visibility_score_weight ON cte_visit_product_dim.categ_name::text = visibility_score_weight.category::text AND cte_visit_product_dim.seg1::text = visibility_score_weight.segment::text AND cte_visit_product_dim.brand::text = visibility_score_weight.brand::text AND visibility_score_weight.fiscal_year_id::text = cte_visit_product_dim.fiscal_year_id::text
-   LEFT JOIN procter_and_gamble_es_pharma.product_facing_fact ON cte_visit_product_dim.visit_id = product_facing_fact.visit_id AND cte_visit_product_dim.seg1::text = product_facing_fact.seg1::text AND cte_visit_product_dim.brand::text = product_facing_fact.brand::text
-   LEFT JOIN procter_and_gamble_es_pharma.product_facing_fact_segment ON cte_visit_product_dim.visit_id = product_facing_fact_segment.visit_id AND cte_visit_product_dim.seg1::text = product_facing_fact_segment.seg1::text
-   LEFT JOIN procter_and_gamble_es_pharma.product_facing_fact_visit ON cte_visit_product_dim.visit_id = product_facing_fact_visit.visit_id
-   LEFT JOIN procter_and_gamble_es_pharma.product_count ON cte_visit_product_dim.visit_id = product_count.visit_id AND cte_visit_product_dim.seg1::text = product_count.seg1::text AND cte_visit_product_dim.brand::text = product_count.brand::text
-   JOIN procter_and_gamble_es_pharma.store_master store_master ON cte_visit_product_dim.store_id = store_master.store_id
-   LEFT JOIN procter_and_gamble_es_pharma.t_and_f_compliance ON cte_visit_product_dim.visit_id = t_and_f_compliance.visit_id AND cte_visit_product_dim.brand::text = t_and_f_compliance.brand::text AND cte_visit_product_dim.seg1::text = t_and_f_compliance.segment::text
-   LEFT JOIN procter_and_gamble_es_pharma.store_compliance store_compliance ON store_compliance.store_id = cte_visit_product_dim.store_id AND store_compliance.visit_date_key = cte_visit_product_dim.visit_date_key
-   LEFT JOIN procter_and_gamble_es_pharma.category_compliance ON category_compliance.store_id = cte_visit_product_dim.store_id AND category_compliance.visit_date_key = cte_visit_product_dim.visit_date_key AND category_compliance.categ_name::text = cte_visit_product_dim.categ_name::text
-  GROUP BY cte_visit_product_dim.store_id, store_master.internal_code, cte_visit_product_dim.visit_id, cte_visit_product_dim.visit_date_key, cte_visit_product_dim.categ_name, cte_visit_product_dim.owner_id, cte_visit_product_dim.seg1, cte_visit_product_dim.brand, cte_visit_product_dim.brand_sales_id, category_compliance.category_compliance, store_compliance.store_compliance, store_compliance.count_category, store_compliance.target_category, store_compliance.total_category, product_facing_fact.own_primary_shelf_facing, product_facing_fact.own_total_shelf_facing, product_facing_fact.brand_primary_shelf_facing, product_facing_fact.brand_total_shelf_facing, product_facing_fact_segment.total_primary_shelf_facing, product_facing_fact_segment.total_shelf_facing, product_facing_fact_visit.total_primary_shelf_facing_visit, product_facing_fact_visit.total_shelf_facing_visit, product_count.present_count, product_count.oos_count, visibility_score_weight.psku_weight, visibility_score_weight.psku_target, perfect_shelf_rules_weighted_compliance.compliance, visibility_score_weight.pv_weight, visibility_score_weight.pv_target, perfect_shelf_rules_weighted_compliance.fa_compliance, perfect_shelf_rules_weighted_compliance.oc_compliance, perfect_shelf_rules_weighted_compliance.bc_compliance, perfect_shelf_rules_weighted_compliance.tzone_compliance, perfect_shelf_rules_weighted_compliance.sp_compliance, visibility_score_weight.sp_weight, visibility_score_weight.sp_target, t_and_f_compliance.tf_compliance, visibility_score_weight.tf_weight, visibility_score_weight.tf_target, perfect_shelf_rules_weighted_compliance.mv_points;
+as 
+ select
+	cte_visit_product_dim.store_id,
+	store_master.internal_code,
+	cte_visit_product_dim.visit_id,
+	cte_visit_product_dim.visit_date_key,
+	cte_visit_product_dim.categ_name,
+	cte_visit_product_dim.owner_id,
+	cte_visit_product_dim.seg1,
+	cte_visit_product_dim.brand,
+	cte_visit_product_dim.brand_sales_id,
+	case
+		when category_compliance_table.category_compliance is null then 0
+		else category_compliance_table.category_compliance
+	end as category_compliance,
+	store_compliance.store_compliance as perfect_report_compliance,
+	store_compliance.count_category as count_primary_category,
+	store_compliance.target_category as target_primary_category,
+	store_compliance.total_category as count_category,
+	product_facing_fact_table.own_primary_shelf_facing,
+	product_facing_fact_table.own_total_shelf_facing,
+	product_facing_fact_table.brand_primary_shelf_facing,
+	product_facing_fact_table.brand_total_shelf_facing,
+	product_facing_fact_segment_table.total_primary_shelf_facing,
+	product_facing_fact_segment_table.total_shelf_facing,
+	product_facing_fact_visit_table.total_primary_shelf_facing_visit,
+	product_facing_fact_visit_table.total_shelf_facing_visit,
+	product_count_table.present_count,
+	product_count_table.oos_count,
+	visibility_score_weight.psku_weight,
+	visibility_score_weight.psku_target,
+	perfect_shelf_rules_weighted_compliance.compliance,
+	visibility_score_weight.pv_weight,
+	visibility_score_weight.pv_target,
+	perfect_shelf_rules_weighted_compliance.fa_compliance,
+	perfect_shelf_rules_weighted_compliance.oc_compliance,
+	perfect_shelf_rules_weighted_compliance.bc_compliance,
+	perfect_shelf_rules_weighted_compliance.tzone_compliance,
+	perfect_shelf_rules_weighted_compliance.sp_compliance,
+	visibility_score_weight.sp_weight,
+	visibility_score_weight.sp_target,
+	t_and_f_compliance_table.tf_compliance,
+	visibility_score_weight.tf_weight,
+	visibility_score_weight.tf_target,
+	perfect_shelf_rules_weighted_compliance.mv_points
+from
+	(
+	select
+		distinct storechecks_visit_fact_fiscal_year.visit_id,
+		storechecks_visit_fact_fiscal_year.visit_date_key,
+		storechecks_visit_fact_fiscal_year.fiscal_year_id,
+		storechecks_visit_fact_fiscal_year.store_id,
+		storechecks_visit_fact_fiscal_year.owner_id,
+		storechecks_visit_fact_fiscal_year.categ_name,
+		product_master.seg1,
+		product_master.brand,
+		product_master.brand::text || storechecks_visit_fact_fiscal_year.fiscal_year_id::text as brand_sales_id
+	from
+		procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year,
+		procter_and_gamble_es_pharma.product_master product_master
+	where
+		storechecks_visit_fact_fiscal_year.categ_name::text = product_master.base::text
+		and product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text
+		and product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text
+		and product_master.desc_j::text <> 'EXCLUDE'::character varying::text) cte_visit_product_dim
+left join procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance perfect_shelf_rules_weighted_compliance on
+	cte_visit_product_dim.visit_id = perfect_shelf_rules_weighted_compliance.visit_id
+	and cte_visit_product_dim.seg1::text = perfect_shelf_rules_weighted_compliance.segment::text
+	and cte_visit_product_dim.brand::text = perfect_shelf_rules_weighted_compliance.brand::text
+left join procter_and_gamble_es_pharma.visibility_score_weight visibility_score_weight on
+	cte_visit_product_dim.categ_name::text = visibility_score_weight.category::text
+	and cte_visit_product_dim.seg1::text = visibility_score_weight.segment::text
+	and cte_visit_product_dim.brand::text = visibility_score_weight.brand::text
+	and visibility_score_weight.fiscal_year_id::text = cte_visit_product_dim.fiscal_year_id::text
+left join procter_and_gamble_es_pharma.product_facing_fact_table on
+	cte_visit_product_dim.visit_id = product_facing_fact_table.visit_id
+	and cte_visit_product_dim.seg1::text = product_facing_fact_table.seg1::text
+	and cte_visit_product_dim.brand::text = product_facing_fact_table.brand::text
+left join procter_and_gamble_es_pharma.product_facing_fact_segment_table on
+	cte_visit_product_dim.visit_id = product_facing_fact_segment_table.visit_id
+	and cte_visit_product_dim.seg1::text = product_facing_fact_segment_table.seg1::text
+left join procter_and_gamble_es_pharma.product_facing_fact_visit_table on
+	cte_visit_product_dim.visit_id = product_facing_fact_visit_table.visit_id
+left join procter_and_gamble_es_pharma.product_count_table on
+	cte_visit_product_dim.visit_id = product_count_table.visit_id
+	and cte_visit_product_dim.seg1::text = product_count_table.seg1::text
+	and cte_visit_product_dim.brand::text = product_count_table.brand::text
+join procter_and_gamble_es_pharma.store_master store_master on
+	cte_visit_product_dim.store_id = store_master.store_id
+left join procter_and_gamble_es_pharma.t_and_f_compliance_table on
+	cte_visit_product_dim.visit_id = t_and_f_compliance_table.visit_id
+	and cte_visit_product_dim.brand::text = t_and_f_compliance_table.brand::text
+	and cte_visit_product_dim.seg1::text = t_and_f_compliance_table.segment::text
+left join procter_and_gamble_es_pharma.store_compliance store_compliance on
+	store_compliance.store_id = cte_visit_product_dim.store_id
+	and store_compliance.visit_date_key = cte_visit_product_dim.visit_date_key
+left join procter_and_gamble_es_pharma.category_compliance_table on
+	category_compliance_table.store_id = cte_visit_product_dim.store_id
+	and category_compliance_table.visit_date_key = cte_visit_product_dim.visit_date_key
+	and category_compliance_table.categ_name::text = cte_visit_product_dim.categ_name::text
+group by
+	cte_visit_product_dim.store_id,
+	store_master.internal_code,
+	cte_visit_product_dim.visit_id,
+	cte_visit_product_dim.visit_date_key,
+	cte_visit_product_dim.categ_name,
+	cte_visit_product_dim.owner_id,
+	cte_visit_product_dim.seg1,
+	cte_visit_product_dim.brand,
+	cte_visit_product_dim.brand_sales_id,
+	category_compliance_table.category_compliance,
+	store_compliance.store_compliance,
+	store_compliance.count_category,
+	store_compliance.target_category,
+	store_compliance.total_category,
+	product_facing_fact_table.own_primary_shelf_facing,
+	product_facing_fact_table.own_total_shelf_facing,
+	product_facing_fact_table.brand_primary_shelf_facing,
+	product_facing_fact_table.brand_total_shelf_facing,
+	product_facing_fact_segment_table.total_primary_shelf_facing,
+	product_facing_fact_segment_table.total_shelf_facing,
+	product_facing_fact_visit_table.total_primary_shelf_facing_visit,
+	product_facing_fact_visit_table.total_shelf_facing_visit,
+	product_count_table.present_count,
+	product_count_table.oos_count,
+	visibility_score_weight.psku_weight,
+	visibility_score_weight.psku_target,
+	perfect_shelf_rules_weighted_compliance.compliance,
+	visibility_score_weight.pv_weight,
+	visibility_score_weight.pv_target,
+	perfect_shelf_rules_weighted_compliance.fa_compliance,
+	perfect_shelf_rules_weighted_compliance.oc_compliance,
+	perfect_shelf_rules_weighted_compliance.bc_compliance,
+	perfect_shelf_rules_weighted_compliance.tzone_compliance,
+	perfect_shelf_rules_weighted_compliance.sp_compliance,
+	visibility_score_weight.sp_weight,
+	visibility_score_weight.sp_target,
+	t_and_f_compliance_table.tf_compliance,
+	visibility_score_weight.tf_weight,
+	visibility_score_weight.tf_target,
+	perfect_shelf_rules_weighted_compliance.mv_points;
 
+grant
+select
+	on
+	procter_and_gamble_es_pharma.kbd_calculations_table to powerbi_user1;
 
-GRANT SELECT ON procter_and_gamble_es_pharma.kbd_calculations_table TO powerbi_user1;
-GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.kbd_calculations_table TO plano_auto_export;
-GRANT SELECT ON procter_and_gamble_es_pharma.kbd_calculations_table TO pg_es_pharma;
+grant trigger,
+select
+	,
+	delete
+	,
+	update
+	,
+	rule,
+	insert
+	,
+	references on
+	procter_and_gamble_es_pharma.kbd_calculations_table to plano_auto_export;
 
+grant
+select
+	on
+	procter_and_gamble_es_pharma.kbd_calculations_table to pg_es_pharma;
 
-COMMIT;
+commit;
