@@ -75,20 +75,20 @@ as
 	product_count_table.oos_count,
 	visibility_score_weight.psku_weight,
 	visibility_score_weight.psku_target,
-	perfect_shelf_rules_weighted_compliance.compliance,
+	perfect_shelf_rules_weighted_compliance_table.compliance,
 	visibility_score_weight.pv_weight,
 	visibility_score_weight.pv_target,
-	perfect_shelf_rules_weighted_compliance.fa_compliance,
-	perfect_shelf_rules_weighted_compliance.oc_compliance,
-	perfect_shelf_rules_weighted_compliance.bc_compliance,
-	perfect_shelf_rules_weighted_compliance.tzone_compliance,
-	perfect_shelf_rules_weighted_compliance.sp_compliance,
+	perfect_shelf_rules_weighted_compliance_table.fa_compliance,
+	perfect_shelf_rules_weighted_compliance_table.oc_compliance,
+	perfect_shelf_rules_weighted_compliance_table.bc_compliance,
+	perfect_shelf_rules_weighted_compliance_table.tzone_compliance,
+	perfect_shelf_rules_weighted_compliance_table.sp_compliance,
 	visibility_score_weight.sp_weight,
 	visibility_score_weight.sp_target,
 	t_and_f_compliance_table.tf_compliance,
 	visibility_score_weight.tf_weight,
 	visibility_score_weight.tf_target,
-	perfect_shelf_rules_weighted_compliance.mv_points
+	perfect_shelf_rules_weighted_compliance_table.mv_points
 from
 	(
 	select
@@ -109,10 +109,10 @@ from
 		and product_master.seg1::text !~~ '%NO SEGMENT%'::character varying::text
 		and product_master.seg1::text <> 'DEVALID PRODUCT'::character varying::text
 		and product_master.desc_j::text <> 'EXCLUDE'::character varying::text) cte_visit_product_dim
-left join procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance perfect_shelf_rules_weighted_compliance on
-	cte_visit_product_dim.visit_id = perfect_shelf_rules_weighted_compliance.visit_id
-	and cte_visit_product_dim.seg1::text = perfect_shelf_rules_weighted_compliance.segment::text
-	and cte_visit_product_dim.brand::text = perfect_shelf_rules_weighted_compliance.brand::text
+left join procter_and_gamble_es_pharma.perfect_shelf_rules_weighted_compliance_table perfect_shelf_rules_weighted_compliance_table on
+	cte_visit_product_dim.visit_id = perfect_shelf_rules_weighted_compliance_table.visit_id
+	and cte_visit_product_dim.seg1::text = perfect_shelf_rules_weighted_compliance_table.segment::text
+	and cte_visit_product_dim.brand::text = perfect_shelf_rules_weighted_compliance_table.brand::text
 left join procter_and_gamble_es_pharma.visibility_score_weight visibility_score_weight on
 	cte_visit_product_dim.categ_name::text = visibility_score_weight.category::text
 	and cte_visit_product_dim.seg1::text = visibility_score_weight.segment::text
@@ -171,20 +171,20 @@ group by
 	product_count_table.oos_count,
 	visibility_score_weight.psku_weight,
 	visibility_score_weight.psku_target,
-	perfect_shelf_rules_weighted_compliance.compliance,
+	perfect_shelf_rules_weighted_compliance_table.compliance,
 	visibility_score_weight.pv_weight,
 	visibility_score_weight.pv_target,
-	perfect_shelf_rules_weighted_compliance.fa_compliance,
-	perfect_shelf_rules_weighted_compliance.oc_compliance,
-	perfect_shelf_rules_weighted_compliance.bc_compliance,
-	perfect_shelf_rules_weighted_compliance.tzone_compliance,
-	perfect_shelf_rules_weighted_compliance.sp_compliance,
+	perfect_shelf_rules_weighted_compliance_table.fa_compliance,
+	perfect_shelf_rules_weighted_compliance_table.oc_compliance,
+	perfect_shelf_rules_weighted_compliance_table.bc_compliance,
+	perfect_shelf_rules_weighted_compliance_table.tzone_compliance,
+	perfect_shelf_rules_weighted_compliance_table.sp_compliance,
 	visibility_score_weight.sp_weight,
 	visibility_score_weight.sp_target,
 	t_and_f_compliance_table.tf_compliance,
 	visibility_score_weight.tf_weight,
 	visibility_score_weight.tf_target,
-	perfect_shelf_rules_weighted_compliance.mv_points;
+	perfect_shelf_rules_weighted_compliance_table.mv_points;
 
 grant
 select
