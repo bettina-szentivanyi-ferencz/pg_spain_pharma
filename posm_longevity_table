@@ -1,96 +1,135 @@
-DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_longevity_table CASCADE;
-CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_longevity_table AS
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_compliance_table CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_compliance_table AS
 with recursive
--- filtering posms which are complaint
-posm_help_table_3
+cte_visit_product_dim
 as
 (
 select
-  posm_help_table_2.store_id,
-  posm_help_table_2.internal_code,
-  posm_help_table_2.owner_id,
-  posm_help_table_2.visit_id,
-  posm_help_table_2.visit_date_key,
-  posm_help_table_2.partition_id,
-  posm_help_table_2.join_id,
-  posm_help_table_2.previous_visit_date_key,
-  case 
-  when previous_visit_date_key is null then 0::integer
-  else
-  datediff(day, cast(previous_visit_date_key as date), cast(visit_date_key as date)) 
-  end AS visit_date_key_diff,
-  posm_help_table_2.categ_name,
-  posm_help_table_2.brand,
-  posm_help_table_2.posm_type,
-  posm_help_table_2.posm_name,
-  posm_help_table_2.posm_compliance,
-  posm_help_table_2.previous_posm_compliance,
-  case when previous_posm_compliance = 0 then 2::integer
-  when previous_posm_compliance is null then 0::integer
-  when previous_posm_compliance = 1 then 0::integer
-  when previous_posm_compliance = 0 then 0::integer
-  else null 
-  end as previous_posm_compliance_ranking
-  from procter_and_gamble_es_pharma.posm_help_table_2)
-  select 
-  posm_help_table_3.store_id,
-  posm_help_table_3.internal_code,
-  posm_help_table_3.owner_id,
-  posm_help_table_3.visit_id,
-  posm_help_table_3.partition_id,
-  posm_help_table_3.join_id,
-  posm_help_table_3.visit_date_key,
-  posm_help_table_3.previous_visit_date_key,
-  posm_help_table_3.visit_date_key_diff,
-  posm_help_table_3.categ_name,
-  posm_help_table_3.brand,
-  posm_help_table_3.posm_type,
-  posm_help_table_3.posm_name,
-  posm_help_table_3.posm_compliance,
-  posm_help_table_3.previous_posm_compliance,
-  posm_help_table_3.previous_posm_compliance_ranking,
-  rank() over (partition by partition_id order by store_id, previous_posm_compliance_ranking, visit_date_key  asc) as visit_rank,
-  sum(visit_date_key_diff) over (partition by partition_id
-  order by store_id, visit_date_key rows unbounded preceding) as longevity_days
-  from posm_help_table_3
-  order by 
-  store_id,
-  visit_date_key asc,
-  posm_name;
-  
-GRANT SELECT ON procter_and_gamble_es_pharma.posm_longevity_table TO powerbi_user1;
-GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_longevity_table TO plano_auto_export;
-GRANT SELECT ON procter_and_gamble_es_pharma.posm_longevity_table TO pg_es_pharma;
-  
-  
-    DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_help_table_2 CASCADE;
-CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_help_table_2  AS 
+	distinct 
+    storechecks_visit_fact_fiscal_year.visit_id,
+	storechecks_visit_fact_fiscal_year.visit_date_key,
+	storechecks_visit_fact_fiscal_year.fiscal_year_id,
+	storechecks_visit_fact_fiscal_year.store_id,
+	storechecks_visit_fact_fiscal_year.owner_id,
+	storechecks_visit_fact_fiscal_year.categ_name,
+	product_master.brand,
+	product_master.brand::text || storechecks_visit_fact_fiscal_year.fiscal_year_id::text as brand_sales_id
+from
+	procter_and_gamble_es_pharma.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year,
+	procter_and_gamble_es_pharma.product_master product_master
+where
+	storechecks_visit_fact_fiscal_year.categ_name::text = product_master.base::text
+	and product_master.manufacturer::text = 'Procter and Gamble'::character varying::text
+	and product_master.product_id::text <>'61892755fdcd982780006c64' 
+	and  product_master.product_id::text <>'6189270bfdcd982780006c07' 
+	and  product_master.product_id::text <>'618927d7fdcd982a48003b46' 
+	and product_master.product_id::text <>'61892866fdcd9843b8006970'),
+cte_posm_fact
+as
+ (
 select
-  posm_help_table.store_id,
-  posm_help_table.internal_code,
-  posm_help_table.owner_id,
-  posm_help_table.visit_id,
-  posm_help_table.visit_date_key,
-  posm_help_table.partition_id,
-  posm_help_table.join_id,
-  LAG(posm_help_table.visit_date_key) OVER (PARTITION BY posm_help_table.partition_id ORDER BY posm_help_table.visit_date_key asc) AS previous_visit_date_key,
-  posm_help_table.categ_name,
-  posm_help_table.brand,
-  posm_help_table.posm_type,
-  posm_help_table.posm_name,
-  LAG(posm_help_table.posm_compliance) OVER (PARTITION BY posm_help_table.partition_id ORDER BY posm_help_table.visit_date_key asc) AS previous_posm_compliance,
-  posm_help_table.posm_compliance
-  FROM procter_and_gamble_es_pharma.posm_help_table
-  order by 
-  store_id,
-  visit_date_key asc,
-  posm_name;
+	storechecks_planogram_fact.visit_id,
+	split_part(product_master.desc_i::text, ' - '::character varying::text, 1)::character varying as posm,
+	split_part(product_master.desc_i::text, ' - '::character varying::text, 2)::character varying as type_name,
+	product_master.base,
+	product_master.brand,
+	sum(
+                case
+                    when product_master.desc_i <>''  then storechecks_planogram_fact.facings::double precision
+                    else null::double precision
+                end) as posm_compliance
+from
+	procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact,
+	procter_and_gamble_es_pharma.product_master product_master
+where
+	storechecks_planogram_fact.product_id = product_master.product_id
+	and product_master.desc_i<>''
+group by
+	storechecks_planogram_fact.visit_id,
+	product_master.base,
+	product_master.brand,
+	product_master.desc_i),
+posm_fact_product_level
+as
+ (
+select
+	storechecks_planogram_fact.visit_id,
+	split_part(product_master.desc_i::text, ' - '::character varying::text, 1)::character varying as posm,
+	split_part(product_master.desc_i::text, ' - '::character varying::text, 2)::character varying as type_name,
+	product_master.base,
+	product_master.brand,
+	product_master.description as posm_name,
+		sum(
+                case
+                    when product_master.desc_i <>''  then storechecks_planogram_fact.facings::double precision
+                    else null::double precision
+                end) as posm_name_compliance
+from
+	procter_and_gamble_es_pharma.storechecks_planogram_fact storechecks_planogram_fact,
+	procter_and_gamble_es_pharma.product_master product_master
+where
+	storechecks_planogram_fact.product_id = product_master.product_id
+	and product_master.desc_i<>''
+group by
+	storechecks_planogram_fact.visit_id,
+	product_master.base,
+	product_master.brand,
+	product_master.description,
+	product_master.desc_i)
+select
+	cte_visit_product_dim.store_id,
+	store_master.internal_code,
+	cte_visit_product_dim.owner_id,
+	cte_visit_product_dim.visit_id,
+	cte_visit_product_dim.visit_date_key,
+	cte_visit_product_dim.categ_name,
+	kbd_calculations_table.seg1,
+	cte_visit_product_dim.brand,
+	cte_visit_product_dim.brand_sales_id,
+	cte_posm_fact.type_name as posm_type,
+	posm_fact_product_level.posm_name,
+	case when cte_posm_fact.posm_compliance is null then 0::integer
+	else 1
+	end as posm_type_compliance,
+	case when  posm_fact_product_level.posm_name_compliance is null then 0::integer
+	else 1
+	end as posm_name_compliance,
+	posm_name_compliance as number_of_posm
+from 
+cte_visit_product_dim cte_visit_product_dim
+left join procter_and_gamble_es_pharma.kbd_calculations_table kbd_calculations_table on kbd_calculations_table.visit_id=cte_visit_product_dim.visit_id
+and kbd_calculations_table.categ_name=cte_visit_product_dim.categ_name 
+and  kbd_calculations_table.brand=cte_visit_product_dim.brand
+left join cte_posm_fact cte_posm_fact on cte_posm_fact.visit_id=cte_visit_product_dim.visit_id
+and cte_posm_fact.base=cte_visit_product_dim.categ_name 
+and  cte_posm_fact.brand=cte_visit_product_dim.brand
+left join posm_fact_product_level posm_fact_product_level on posm_fact_product_level.visit_id=cte_visit_product_dim.visit_id
+and posm_fact_product_level.base=cte_visit_product_dim.categ_name 
+and cte_posm_fact.type_name=posm_fact_product_level.type_name
+and  posm_fact_product_level.brand=cte_visit_product_dim.brand
+join procter_and_gamble_es_pharma.store_master store_master on  cte_visit_product_dim.store_id = store_master.store_id
+group by 
+	cte_visit_product_dim.store_id,
+	store_master.internal_code,
+	cte_visit_product_dim.owner_id,
+	cte_visit_product_dim.visit_id,
+	cte_visit_product_dim.visit_date_key, 
+	cte_visit_product_dim.categ_name,
+	kbd_calculations_table.seg1,
+	cte_visit_product_dim.brand,
+	cte_visit_product_dim.brand_sales_id,
+	cte_posm_fact.type_name,
+	posm_fact_product_level.posm_name,
+	posm_type_compliance,
+	posm_name_compliance;
+	
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_compliance_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_compliance_table TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_compliance_table TO pg_es_pharma;
+
+
+COMMIT;
   
-GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table_2 TO powerbi_user1;
-GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_help_table_2 TO plano_auto_export;
-GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table_2 TO pg_es_pharma;
-
-
 DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_help_table CASCADE;
 CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_help_table  AS
 with recursive
@@ -100,19 +139,19 @@ cte_compliant_posm
 as
 (
 select
-  posm_compliance.store_id,
-  posm_compliance.internal_code,
-  posm_compliance.owner_id,
-  posm_compliance.visit_id,
-  posm_compliance.visit_date_key,
-  posm_compliance.categ_name,
-  posm_compliance.brand,
-  posm_compliance.posm_type,
-  posm_compliance.posm_name,
-  posm_compliance.posm_type_compliance,
-  posm_compliance.posm_name_compliance
+  posm_compliance_table.store_id,
+  posm_compliance_table.internal_code,
+  posm_compliance_table.owner_id,
+  posm_compliance_table.visit_id,
+  posm_compliance_table.visit_date_key,
+  posm_compliance_table.categ_name,
+  posm_compliance_table.brand,
+  posm_compliance_table.posm_type,
+  posm_compliance_table.posm_name,
+  posm_compliance_table.posm_type_compliance,
+  posm_compliance_table.posm_name_compliance
 from
-	procter_and_gamble_es_pharma.posm_compliance posm_compliance
+	procter_and_gamble_es_pharma.posm_compliance_table posm_compliance_table
 	where visit_date_key > '2022-01-01'),
 -- counting visits per store
 cte_visit_count
@@ -243,7 +282,6 @@ select
   and cte_visit_count.internal_code=cte_posm_compliance_with_non_compliant.internal_code
   and cte_visit_count.categ_name=cte_posm_compliance_with_non_compliant.categ_name
   and count_visit_date >= 2
-  and posm_name='NUEVA CASITA PREFILL VICKS FY2122 technical generic'
   order by 
   store_id,
   visit_date_key desc,
@@ -252,3 +290,105 @@ select
 GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table TO powerbi_user1;
 GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_help_table TO plano_auto_export;
 GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table TO pg_es_pharma;
+
+
+
+
+
+
+
+ DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_help_table_2 CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_help_table_2  AS 
+select
+  posm_help_table.store_id,
+  posm_help_table.internal_code,
+  posm_help_table.owner_id,
+  posm_help_table.visit_id,
+  posm_help_table.visit_date_key,
+  posm_help_table.partition_id,
+  posm_help_table.join_id,
+  LAG(posm_help_table.visit_date_key) OVER (PARTITION BY posm_help_table.partition_id ORDER BY posm_help_table.visit_date_key asc) AS previous_visit_date_key,
+  posm_help_table.categ_name,
+  posm_help_table.brand,
+  posm_help_table.posm_type,
+  posm_help_table.posm_name,
+  LAG(posm_help_table.posm_compliance) OVER (PARTITION BY posm_help_table.partition_id ORDER BY posm_help_table.visit_date_key asc) AS previous_posm_compliance,
+  posm_help_table.posm_compliance
+  FROM procter_and_gamble_es_pharma.posm_help_table
+  order by 
+  store_id,
+  visit_date_key asc,
+  posm_name;
+  
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table_2 TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_help_table_2 TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_help_table_2 TO pg_es_pharma;
+
+
+
+
+
+
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma.posm_longevity_table CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma.posm_longevity_table AS
+with recursive
+-- filtering posms which are complaint
+posm_help_table_3
+as
+(
+select
+  posm_help_table_2.store_id,
+  posm_help_table_2.internal_code,
+  posm_help_table_2.owner_id,
+  posm_help_table_2.visit_id,
+  posm_help_table_2.visit_date_key,
+  posm_help_table_2.partition_id,
+  posm_help_table_2.join_id,
+  posm_help_table_2.previous_visit_date_key,
+  case 
+  when previous_visit_date_key is null then 0::integer
+  else
+  datediff(day, cast(previous_visit_date_key as date), cast(visit_date_key as date)) 
+  end AS visit_date_key_diff,
+  posm_help_table_2.categ_name,
+  posm_help_table_2.brand,
+  posm_help_table_2.posm_type,
+  posm_help_table_2.posm_name,
+  posm_help_table_2.posm_compliance,
+  posm_help_table_2.previous_posm_compliance,
+  case when previous_posm_compliance = 0 then 2::integer
+  when previous_posm_compliance is null then 0::integer
+  when previous_posm_compliance = 1 then 0::integer
+  when previous_posm_compliance = 0 then 0::integer
+  else null 
+  end as previous_posm_compliance_ranking
+  from procter_and_gamble_es_pharma.posm_help_table_2)
+  select 
+  posm_help_table_3.store_id,
+  posm_help_table_3.internal_code,
+  posm_help_table_3.owner_id,
+  posm_help_table_3.visit_id,
+  posm_help_table_3.partition_id,
+  posm_help_table_3.join_id,
+  posm_help_table_3.visit_date_key,
+  posm_help_table_3.previous_visit_date_key,
+  posm_help_table_3.visit_date_key_diff,
+  posm_help_table_3.categ_name,
+  posm_help_table_3.brand,
+  posm_help_table_3.posm_type,
+  posm_help_table_3.posm_name,
+  posm_help_table_3.posm_compliance,
+  posm_help_table_3.previous_posm_compliance,
+  posm_help_table_3.previous_posm_compliance_ranking,
+  rank() over (partition by partition_id order by store_id, previous_posm_compliance_ranking, visit_date_key  asc) as visit_rank,
+  sum(visit_date_key_diff) over (partition by partition_id
+  order by store_id, visit_date_key rows unbounded preceding) as longevity_days
+  from posm_help_table_3
+  order by 
+  store_id,
+  visit_date_key asc,
+  posm_name;
+  
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_longevity_table TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma.posm_longevity_table TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma.posm_longevity_table TO pg_es_pharma;
