@@ -1,0 +1,161 @@
+DROP VIEW IF EXISTS procter_and_gamble_es_pharma_2324.storechecks_kpi_fact_view CASCADE;
+CREATE OR REPLACE VIEW procter_and_gamble_es_pharma_2324.storechecks_kpi_fact_view  AS
+with recursive
+-- filtering visit data from storechecks_visit_fact_fiscal_year and product data from product_master
+cte_display_group_kpi_group_from_kpi_fact
+-- old z
+as
+(
+				select
+					distinct 
+					storechecks_kpi_fact.visit_id,
+					storechecks_visit_fact.categ_code,
+					perfect_shelf_help_table.category,	
+          perfect_shelf_help_table.segment,		
+          perfect_shelf_help_table.brand,	
+					storechecks_kpi_fact.display_group,
+					perfect_shelf_help_table.display_group_name,
+					storechecks_kpi_fact.kpi_group1,
+					storechecks_kpi_fact.photo_group_type
+				from
+					procter_and_gamble_es_pharma_2324.storechecks_kpi_fact storechecks_kpi_fact,
+					procter_and_gamble_es_pharma.storechecks_visit_fact storechecks_visit_fact,
+					procter_and_gamble_es_pharma_2324.perfect_shelf_help_table perfect_shelf_help_table
+				where
+					storechecks_kpi_fact.visit_id = storechecks_visit_fact.visit_id
+					and perfect_shelf_help_table.display_group=storechecks_kpi_fact.display_group
+					and storechecks_visit_fact.visit_date_key  >='2022-07-01'
+					and storechecks_kpi_fact.kpi_group1::text <>''
+					and storechecks_kpi_fact.photo_group_type::text <>''
+					and storechecks_kpi_fact.product_id::text =''
+					),
+cte_display_group_from_help_table
+as 
+(
+select
+    perfect_shelf_help_table.categ_code,
+    perfect_shelf_help_table.category,	
+    perfect_shelf_help_table.segment,		
+    perfect_shelf_help_table.brand,			
+    perfect_shelf_help_table.kpi_group,
+			perfect_shelf_help_table.display_group,
+			perfect_shelf_help_table.display_group_name,
+			perfect_shelf_help_table.photo_group_type
+		from
+			procter_and_gamble_es_pharma_2324.perfect_shelf_help_table),
+cte_missing_rules_table
+as 
+(
+select 
+cte_display_group_kpi_group_from_kpi_fact.visit_id,
+cte_display_group_kpi_group_from_kpi_fact.categ_code,
+cte_display_group_from_help_table.category,
+cte_display_group_from_help_table.segment,
+cte_display_group_from_help_table.brand,
+cte_display_group_from_help_table.kpi_group,
+cte_display_group_from_help_table.display_group,
+cte_display_group_from_help_table.display_group_name,
+cte_display_group_from_help_table.photo_group_type
+from cte_display_group_kpi_group_from_kpi_fact cte_display_group_kpi_group_from_kpi_fact,
+cte_display_group_from_help_table cte_display_group_from_help_table
+where cte_display_group_kpi_group_from_kpi_fact.categ_code=cte_display_group_from_help_table.categ_code
+except
+select
+cte_display_group_kpi_group_from_kpi_fact.visit_id,
+cte_display_group_kpi_group_from_kpi_fact.categ_code,
+cte_display_group_kpi_group_from_kpi_fact.category,
+cte_display_group_kpi_group_from_kpi_fact.segment,
+cte_display_group_kpi_group_from_kpi_fact.brand,
+cte_display_group_kpi_group_from_kpi_fact.kpi_group1,
+cte_display_group_kpi_group_from_kpi_fact.display_group,
+cte_display_group_kpi_group_from_kpi_fact.display_group_name,
+cte_display_group_kpi_group_from_kpi_fact.photo_group_type
+from cte_display_group_kpi_group_from_kpi_fact cte_display_group_kpi_group_from_kpi_fact,
+cte_display_group_from_help_table cte_display_group_from_help_table
+where 
+cte_display_group_from_help_table.categ_code =cte_display_group_kpi_group_from_kpi_fact.categ_code
+and cte_display_group_from_help_table.kpi_group =cte_display_group_kpi_group_from_kpi_fact.kpi_group1
+and cte_display_group_from_help_table.display_group =cte_display_group_kpi_group_from_kpi_fact.display_group
+and cte_display_group_from_help_table.photo_group_type =cte_display_group_kpi_group_from_kpi_fact.photo_group_type),
+
+cte_kpi_fact_view 
+as
+(
+select 
+					storechecks_kpi_fact.visit_id,
+					storechecks_kpi_fact.analysis,
+					storechecks_kpi_fact.kpi,
+					storechecks_visit_fact.categ_code,
+					perfect_shelf_help_table.category,	
+          perfect_shelf_help_table.segment,		
+          perfect_shelf_help_table.brand,	
+					storechecks_kpi_fact.display_group,
+					perfect_shelf_help_table.display_group_name,	
+					storechecks_kpi_fact.kpi_group1,
+					storechecks_kpi_fact.photo_group_type,
+					storechecks_kpi_fact.product_group_name,
+					storechecks_kpi_fact.linear,
+					storechecks_kpi_fact.value,
+          storechecks_kpi_fact.target,
+					storechecks_kpi_fact.compliant,
+   				storechecks_kpi_fact.kpi_group2,
+   				storechecks_kpi_fact.photo_group,
+   				storechecks_kpi_fact.product_id				
+from
+					procter_and_gamble_es_pharma_2324.storechecks_kpi_fact storechecks_kpi_fact,
+					procter_and_gamble_es_pharma.storechecks_visit_fact storechecks_visit_fact,
+					procter_and_gamble_es_pharma_2324.perfect_shelf_help_table perfect_shelf_help_table
+				where
+					storechecks_kpi_fact.visit_id = storechecks_visit_fact.visit_id
+					and perfect_shelf_help_table.display_group=storechecks_kpi_fact.display_group
+					and storechecks_kpi_fact.product_id::text =''
+UNION
+select
+					cte_missing_rules_table.visit_id,
+					'missing_optional' as analysis,
+					'missing_optional' as kpi,
+					cte_missing_rules_table.categ_code,
+					cte_missing_rules_table.category,
+					cte_missing_rules_table.segment,
+					cte_missing_rules_table.brand,
+					cte_missing_rules_table.display_group,
+					cte_missing_rules_table.display_group_name,
+					cte_missing_rules_table.kpi_group as kpi_group1,
+					cte_missing_rules_table.photo_group_type,
+					'missing_optional' as product_group_name,
+	        null::double precision as linear,
+        	null::double precision as value,
+	        null::double precision as "target",
+					0::boolean as compliant,
+   				'missing_optional' as kpi_group2,
+   				1000000 as photo_group,
+   				'missing_optional' as product_id				
+from cte_missing_rules_table)
+
+select
+					cte_kpi_fact_view.visit_id,
+					cte_kpi_fact_view.analysis,
+					cte_kpi_fact_view.kpi,
+					cte_kpi_fact_view.categ_code,
+					cte_kpi_fact_view.category,
+					cte_kpi_fact_view.segment,
+					cte_kpi_fact_view.brand,
+          cte_kpi_fact_view.display_group_name as display_group,
+					cte_kpi_fact_view.kpi_group1,
+					cte_kpi_fact_view.photo_group_type,
+					cte_kpi_fact_view.product_group_name,
+					cte_kpi_fact_view.linear,
+					cte_kpi_fact_view.value,
+          cte_kpi_fact_view.target,
+					cte_kpi_fact_view.compliant,
+   				cte_kpi_fact_view.kpi_group2,
+   				cte_kpi_fact_view.photo_group		
+from
+					cte_kpi_fact_view  ;
+					
+GRANT SELECT ON procter_and_gamble_es_pharma_2324.storechecks_kpi_fact_view TO powerbi_user1;
+GRANT TRIGGER, SELECT, DELETE, UPDATE, RULE, INSERT, REFERENCES ON procter_and_gamble_es_pharma_2324.storechecks_kpi_fact_view TO plano_auto_export;
+GRANT SELECT ON procter_and_gamble_es_pharma_2324.storechecks_kpi_fact_view TO pg_es_pharma;
+
+
+COMMIT;
