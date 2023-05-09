@@ -1,0 +1,280 @@
+drop view if exists procter_and_gamble_es_pharma_2324.perfect_shelf_rules_weighted_compliance cascade;
+
+create or replace
+view procter_and_gamble_es_pharma_2324.perfect_shelf_rules_weighted_compliance as
+with recursive
+cte_perfect_shelf_compliance_with_modification
+-- old pg_rules_staging
+as
+(
+select
+	storechecks_kpi_fact_view.visit_id,
+	storechecks_visit_fact_fiscal_year.visit_date_key,
+	storechecks_visit_fact_fiscal_year.fiscal_year_id,
+	storechecks_visit_fact_fiscal_year.store_id,
+	storechecks_visit_fact_fiscal_year.owner_id,
+	storechecks_visit_fact_fiscal_year.categ_name,
+	storechecks_kpi_fact_view.segment,
+	storechecks_kpi_fact_view.brand,
+	storechecks_kpi_fact_view.display_group,
+	case
+		when (count(
+            case
+                when storechecks_kpi_fact_view.compliant = true then 1
+                else null::integer
+            end)::numeric::numeric(18,
+		0) * 1.0 / count(
+            case
+                when storechecks_kpi_fact_view.compliant = false or storechecks_kpi_fact_view.compliant = true or storechecks_kpi_fact_view.compliant is null then 1
+                else null::integer
+            end)::numeric::numeric(18,
+		0) * 1.0) > 0::numeric::numeric(18,
+		0) then 1
+		else 0
+	end as compliance,
+	case
+		when (count(
+            case
+                when storechecks_kpi_fact_view.compliant = true 
+                and storechecks_kpi_fact_view.photo_group_type::text = 'Lineal libre acceso'::character varying::text                   		
+                then 1
+                when storechecks_kpi_fact_view.compliant = true 
+                and ((storechecks_kpi_fact_view.photo_group_type::text = 'Lineal'::character varying::text or storechecks_kpi_fact_view.photo_group_type = ''::text) 
+                and (storechecks_kpi_fact_view.brand::text <> 'Ilvico' or storechecks_kpi_fact_view.brand::text <> 'Vicks' ))
+                then 1
+                else null::integer
+            end)::numeric::numeric(18,
+		0) * 1.0 / count(
+            case
+                when storechecks_kpi_fact_view.compliant = false or storechecks_kpi_fact_view.compliant = true or storechecks_kpi_fact_view.compliant is null then 1
+                else null::integer
+            end)::numeric::numeric(18,
+		0) * 1.0) > 0::numeric::numeric(18,
+		0) then 1
+		else 0
+	end as fa_compliance,
+		case
+		when (count(
+            case
+            	when storechecks_kpi_fact_view.compliant = true
+                and storechecks_kpi_fact_view.photo_group_type::text = 'Lineal detrás del mostrador'::character varying::text
+                then 1
+                when storechecks_kpi_fact_view.compliant = true
+                and ((storechecks_kpi_fact_view.photo_group_type::text = 'Lineal'::character varying::text 
+                or storechecks_kpi_fact_view.photo_group_type::text = ''::text)
+                and (storechecks_kpi_fact_view.brand::text = 'Ilvico' or storechecks_kpi_fact_view.brand::text = 'Vicks' or storechecks_kpi_fact_view.brand::text = 'ZzzQuil'))
+                then 1
+                else null::integer
+            end)::numeric::numeric(18,
+		0) * 1.0 / count(
+            case
+                when storechecks_kpi_fact_view.compliant = false or storechecks_kpi_fact_view.compliant = true or storechecks_kpi_fact_view.compliant is null then 1
+                else null::integer
+            end)::numeric::numeric(18,
+		0) * 1.0) > 0::numeric::numeric(18,
+		0) then 1
+		else 0
+	end as bc_compliance
+from
+	procter_and_gamble_es_pharma_2324.storechecks_kpi_fact_view storechecks_kpi_fact_view,
+	procter_and_gamble_es_pharma_2324.storechecks_visit_fact_fiscal_year storechecks_visit_fact_fiscal_year,
+	procter_and_gamble_es_pharma_2324.perfect_shelf_weight
+where
+	storechecks_kpi_fact_view.visit_id = storechecks_visit_fact_fiscal_year.visit_id
+	and perfect_shelf_weight.perfect_shelf_kpi_name =storechecks_kpi_fact_view.display_group
+	and storechecks_kpi_fact_view.kpi_group1::text <> ''::character varying::text
+	and perfect_shelf_weight.is_ps is true
+group by
+	storechecks_kpi_fact_view.visit_id,
+	storechecks_visit_fact_fiscal_year.visit_date_key,
+	storechecks_visit_fact_fiscal_year.fiscal_year_id,
+	storechecks_visit_fact_fiscal_year.store_id,
+	storechecks_visit_fact_fiscal_year.owner_id,
+	storechecks_visit_fact_fiscal_year.categ_name,
+	storechecks_kpi_fact_view.segment,
+	storechecks_kpi_fact_view.brand,
+	storechecks_kpi_fact_view.display_group,
+	storechecks_kpi_fact_view.kpi_group1),
+-- calculating compliance per perfect shelf rule
+-- why quester and daily rank = 1?
+cte_perfect_shelf_compliance
+-- old pg_rules_staging
+as
+(
+select
+	cte_perfect_shelf_compliance_with_modification.visit_id,
+	cte_perfect_shelf_compliance_with_modification.visit_date_key,
+	cte_perfect_shelf_compliance_with_modification.store_id,
+	cte_perfect_shelf_compliance_with_modification.owner_id,
+	cte_perfect_shelf_compliance_with_modification.categ_name,
+	cte_perfect_shelf_compliance_with_modification.brand,
+	cte_perfect_shelf_compliance_with_modification.segment,
+	cte_perfect_shelf_compliance_with_modification.display_group,
+	Max(cte_perfect_shelf_compliance_with_modification.compliance) as compliance,
+	Max(cte_perfect_shelf_compliance_with_modification.fa_compliance) as fa_compliance,
+	Max(cte_perfect_shelf_compliance_with_modification.bc_compliance) as bc_compliance,
+	perfect_shelf_weight.weight
+from
+	cte_perfect_shelf_compliance_with_modification,
+	procter_and_gamble_es_pharma_2324.perfect_shelf_weight perfect_shelf_weight
+where
+	 cte_perfect_shelf_compliance_with_modification.brand::text = perfect_shelf_weight.brand::text
+	and cte_perfect_shelf_compliance_with_modification.segment::text = perfect_shelf_weight.segment::text
+	and cte_perfect_shelf_compliance_with_modification.display_group::text = perfect_shelf_weight.perfect_shelf_kpi_name::text
+	and cte_perfect_shelf_compliance_with_modification.fiscal_year_id::text = perfect_shelf_weight.fiscal_year_id::text
+group by
+	cte_perfect_shelf_compliance_with_modification.visit_id,
+	cte_perfect_shelf_compliance_with_modification.visit_date_key,
+	cte_perfect_shelf_compliance_with_modification.store_id,
+	cte_perfect_shelf_compliance_with_modification.owner_id,
+	cte_perfect_shelf_compliance_with_modification.categ_name,
+	cte_perfect_shelf_compliance_with_modification.brand,
+	cte_perfect_shelf_compliance_with_modification.segment,
+	cte_perfect_shelf_compliance_with_modification.display_group,
+	perfect_shelf_weight.weight),
+	
+cte_perfect_shelf_compliance_weighted
+-- old pg_rules_staging
+as
+(
+select
+	cte_perfect_shelf_compliance.visit_id,
+	cte_perfect_shelf_compliance.visit_date_key,
+	cte_perfect_shelf_compliance.store_id,
+	cte_perfect_shelf_compliance.owner_id,
+	cte_perfect_shelf_compliance.categ_name,
+	cte_perfect_shelf_compliance.brand,
+	cte_perfect_shelf_compliance.segment,
+	cte_perfect_shelf_compliance.display_group,
+	sum(cte_perfect_shelf_compliance.compliance::double precision * cte_perfect_shelf_compliance.weight) * 1.0::double precision as compliance,
+	sum(cte_perfect_shelf_compliance.fa_compliance::double precision) * 1.0::double precision as fa_compliance,
+	sum(cte_perfect_shelf_compliance.bc_compliance::double precision) * 1.0::double precision as bc_compliance
+from
+	cte_perfect_shelf_compliance
+group by
+	cte_perfect_shelf_compliance.visit_id,
+	cte_perfect_shelf_compliance.visit_date_key,
+	cte_perfect_shelf_compliance.store_id,
+	cte_perfect_shelf_compliance.owner_id,
+	cte_perfect_shelf_compliance.categ_name,
+	cte_perfect_shelf_compliance.brand,
+	cte_perfect_shelf_compliance.segment,
+	cte_perfect_shelf_compliance.display_group),
+cte_perfect_shelf_compliance_weighted_with_visibility_points
+-- old pg_rules_staging	
+as
+(
+select
+	cte_perfect_shelf_compliance_weighted.visit_id,
+	cte_perfect_shelf_compliance_weighted.visit_date_key,
+	cte_perfect_shelf_compliance_weighted.store_id,
+	cte_perfect_shelf_compliance_weighted.owner_id,
+	cte_perfect_shelf_compliance_weighted.categ_name as base,
+	cte_perfect_shelf_compliance_weighted.brand,
+	cte_perfect_shelf_compliance_weighted.segment,
+	visibility_points_compliance.tzone_compliance,
+	visibility_points_compliance.oc_compliance,
+	sum(cte_perfect_shelf_compliance_weighted.compliance::double precision) * 1.0::double precision as compliance,
+	case
+		when cte_perfect_shelf_compliance_weighted.segment in ('Handles', 'Refills', 'Denture Adhesives', 'Calm&Sleep', 'Diagnostics') then 
+			sum(cte_perfect_shelf_compliance_weighted.fa_compliance::double precision) * 1.0::double precision
+		else null::smallint
+	end as fa_compliance,
+	case
+		when cte_perfect_shelf_compliance_weighted.segment in ('MSR', 'Rubs', 'Calm&Sleep') then 
+	   sum(cte_perfect_shelf_compliance_weighted.bc_compliance::double precision) * 1.0::double precision
+		else null::smallint
+	end as bc_compliance
+from
+	cte_perfect_shelf_compliance_weighted
+left join procter_and_gamble_es_pharma.visibility_points_compliance on 
+	visibility_points_compliance.visit_id = cte_perfect_shelf_compliance_weighted.visit_id
+	and visibility_points_compliance.segment::text = cte_perfect_shelf_compliance_weighted.segment::text
+	and visibility_points_compliance.brand::text = cte_perfect_shelf_compliance_weighted.brand::text
+	and visibility_points_compliance.base::text = cte_perfect_shelf_compliance_weighted.categ_name::text
+group by
+	cte_perfect_shelf_compliance_weighted.visit_id,
+	cte_perfect_shelf_compliance_weighted.visit_date_key,
+	cte_perfect_shelf_compliance_weighted.store_id,
+	cte_perfect_shelf_compliance_weighted.owner_id,
+	cte_perfect_shelf_compliance_weighted.categ_name,
+	cte_perfect_shelf_compliance_weighted.brand,
+	cte_perfect_shelf_compliance_weighted.segment,
+	visibility_points_compliance.tzone_compliance,
+	visibility_points_compliance.oc_compliance)
+select 
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.visit_id,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.visit_date_key,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.store_id,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.owner_id,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.base,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.brand,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.segment,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.compliance,
+		case
+		when (cte_perfect_shelf_compliance_weighted_with_visibility_points.segment in ('Handles', 'Refills', 'Toothpastes', 'Denture Adhesives', 'Calm&Sleep', 'Pregnancy', 'MSR', 'Nasal Deco', 'Rubs')
+			and cte_perfect_shelf_compliance_weighted_with_visibility_points.tzone_compliance is null) then 0::double precision
+		when (cte_perfect_shelf_compliance_weighted_with_visibility_points.segment in ('Handles', 'Refills', 'Toothpastes', 'Denture Adhesives', 'Calm&Sleep', 'Pregnancy', 'MSR', 'Nasal Deco', 'Rubs')
+			and cte_perfect_shelf_compliance_weighted_with_visibility_points.tzone_compliance is not null)
+			then sum(cte_perfect_shelf_compliance_weighted_with_visibility_points.tzone_compliance::double precision) * 1.0::double precision
+		else null::smallint
+	end as tzone_compliance,
+	case
+		when (cte_perfect_shelf_compliance_weighted_with_visibility_points.segment in ('Handles', 'Refills', 'Toothpastes', 'Denture Adhesives', 'Calm&Sleep', 'Pregnancy', 'MSR', 'Nasal Deco', 'Rubs')
+			and cte_perfect_shelf_compliance_weighted_with_visibility_points.oc_compliance is null) then 0::double precision
+		when (cte_perfect_shelf_compliance_weighted_with_visibility_points.segment in ('Handles', 'Refills', 'Toothpastes', 'Denture Adhesives', 'Calm&Sleep', 'Pregnancy', 'MSR', 'Nasal Deco', 'Rubs')
+			and cte_perfect_shelf_compliance_weighted_with_visibility_points.oc_compliance is not null)
+			then sum(cte_perfect_shelf_compliance_weighted_with_visibility_points.oc_compliance::double precision) * 1.0::double precision
+		else null::smallint
+	end as oc_compliance,
+	
+	case
+		when cte_perfect_shelf_compliance_weighted_with_visibility_points.fa_compliance = 0 then 0
+		when cte_perfect_shelf_compliance_weighted_with_visibility_points.fa_compliance > 0 then 1
+		else null::smallint
+	end as fa_compliance,
+		case
+		when cte_perfect_shelf_compliance_weighted_with_visibility_points.bc_compliance = 0 then 0
+		when cte_perfect_shelf_compliance_weighted_with_visibility_points.bc_compliance > 0 then 1
+		else null::smallint
+	end as bc_compliance
+from
+	cte_perfect_shelf_compliance_weighted_with_visibility_points
+group by
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.visit_id,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.visit_date_key,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.store_id,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.owner_id,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.base,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.brand,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.segment,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.tzone_compliance,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.oc_compliance,
+	cte_perfect_shelf_compliance_weighted_with_visibility_points.compliance,
+	fa_compliance,
+	bc_compliance;
+
+grant
+select
+	on
+	procter_and_gamble_es_pharma_2324.perfect_shelf_rules_weighted_compliance to powerbi_user1;
+
+grant trigger,
+select
+	,
+	delete
+	,
+	update
+	,
+	rule,
+	insert
+	,
+	references on
+	procter_and_gamble_es_pharma_2324.perfect_shelf_rules_weighted_compliance to plano_auto_export;
+
+grant
+select
+	on
+	procter_and_gamble_es_pharma_2324.perfect_shelf_rules_weighted_compliance to pg_es_pharma;
+
+commit;
